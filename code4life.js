@@ -88,6 +88,7 @@ while (true) {
     //printErr('sample: ' + JSON.stringify(samples[sampleId]));
     printErr('mySamples: ' + JSON.stringify(mySamples));
     printErr('numSamples: ' + mySamples.length);
+    printErr('sampleState: ' + JSON.stringify(sampleStateArr));
 
     if (isMoving) {
         print('WAIT');
@@ -104,12 +105,14 @@ while (true) {
                 getSample();
                 if (mySamples.length === totalSamples - 1) {
                     hasSamples = true;
-                    fillState();
                     next();
                 }
             }
             break;
         case 'DIAGNOSIS':
+            if (sampleStateArr.length === 0) {
+                fillState();
+            }
             if (hasSamples && !allConnected) {
                 connectSamples('isDiagnosed');
             } else {
@@ -153,7 +156,9 @@ while (true) {
 }
 
 function fillState() {
+    printErr('length: ' + mySamples.length);
     mySamples.forEach((sample) => {
+        printErr('filling sample ' + sample.id);
         sampleStateArr.push({
             id: sample.id,
             isDiagnosed: false,
