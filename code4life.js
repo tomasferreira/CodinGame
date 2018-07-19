@@ -37,13 +37,14 @@ const modules = {
     }
 };
 
-const sampleRank = 1;
+var sampleRank = 1;
+const changeRate1 = 5;
+const changeRate2 = 100;
 const totalSamples = 2;
 
 var mod = 'START_POS';
 var hasDiagnosis = false;
 var hasMolecules = false;
-var delivered = false;
 var isMoving = false;
 var hasSamples = false;
 var sampleIsGood = false;
@@ -70,7 +71,27 @@ while (true) {
 
     var players = getTurnPlayers();
     var me = players[0];
+    var storage = {
+        a: me.storageA,
+        b: me.storageB,
+        c: me.storageC,
+        d: me.storageD,
+        e: me.storageE
+    };
+
+    var carrying = storage.a + storage.b + storage.c + storage.d + storage.e;
+
     var enemy = players[1];
+
+    var expertiseTotal = me.expertiseA + me.expertiseB + me.expertiseC + me.expertiseD + me.expertiseE;
+
+    if(expertiseTotal === changeRate1){
+        sampleRank = 2;
+    }
+
+    if(expertiseTotal === changeRate2){
+        sampleRank = 3;
+    }
 
     var availability = getTurnAvailability();
 
@@ -125,6 +146,7 @@ while (true) {
                     hasSamples = false;
                 } else {
                     next('SAMPLES');
+                    sampleStateArr = [];
                 }
             }
             break;
@@ -138,12 +160,14 @@ while (true) {
             }
             break;
         case 'LABORATORY':
-            if (!delivered && !allConnected) {
+            if (!allConnected) {
                 connectSamples('isDelivered');
-            } else {
+            }
+            if (allConnected) {
                 next();
                 allConnected = false;
                 hasSamples = false;
+                sampleStateArr = [];
             }
             break;
         default:
@@ -164,9 +188,23 @@ function fillState() {
             isDiagnosed: false,
             isCheap: false,
             isDelivered: false,
-            hasMolecules: true
+            hasMolecules: false,
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            costA: sample.costA,
+            costB: sample.costB,
+            costC: sample.costC,
+            costD: sample.costD,
+            costE: sample.costE
         });
     });
+
+    if(carrying > 0){
+
+    }
 }
 
 function getSample() {
@@ -193,33 +231,38 @@ function getSampleId() {
 }
 
 function getMolecule() {
-    printErr('st: ' + me.storageA + ' ' + me.storageB + ' ' + me.storageC + ' ' + me.storageD + ' ' + me.storageE);
-
     for (let index = 0; index < sampleStateArr.length; index++) {
         var element = sampleStateArr[index];
         var sampleId = element.id;
+        printErr('checking for molecules for sample ' + sampleId);
 
         if (needsMoleculeA() && availMolA()) {
             print('CONNECT A');
+            element.a++;
             return;
         }
         if (needsMoleculeB() && availMolB()) {
             print('CONNECT B');
+            element.b++;
             return;
         }
         if (needsMoleculeC() && availMolC()) {
             print('CONNECT C');
+            element.c++;
             return;
         }
         if (needsMoleculeD() && availMolD()) {
             print('CONNECT D');
+            element.d++;
             return;
         }
         if (needsMoleculeE() && availMolE()) {
             print('CONNECT E');
+            element.e++;
             return;
         }
         if (hasEnoughtMolecules()) {
+            printErr('has enough sample id: ' + sampleId);
             element.hasMolecules = true;
         }
     }
@@ -236,7 +279,8 @@ function getMolecule() {
     }
 
     function hasEnoughtMolecules() {
-        return !(needsMoleculeA() || needsMoleculeB() || needsMoleculeC() || needsMoleculeD() || needsMoleculeE());
+        var enough = !(needsMoleculeA() || needsMoleculeB() || needsMoleculeC() || needsMoleculeD() || needsMoleculeE());
+        return enough;
     }
 
     function availMolA() {
@@ -255,31 +299,32 @@ function getMolecule() {
         return availability.e > 0;
     }
     function needsMoleculeA() {
-        return me.storageA !== Math.max(0, samples[sampleId].costA - me.expertiseA);
+        return element.a !== samples[sampleId].costA;
     }
     function needsMoleculeB() {
-        return me.storageB !== Math.max(0, samples[sampleId].costB - me.expertiseB);
+        return element.b !== samples[sampleId].costB;
     }
     function needsMoleculeC() {
-        return me.storageC !== Math.max(0, samples[sampleId].costC - me.expertiseC);
+        return element.c !== samples[sampleId].costC;
     }
     function needsMoleculeD() {
-        return me.storageD !== Math.max(0, samples[sampleId].costD - me.expertiseD);
+        return element.d !== samples[sampleId].costD;
     }
     function needsMoleculeE() {
-        return me.storageE !== Math.max(0, samples[sampleId].costE - me.expertiseE);
+        return element.e !== samples[sampleId].costE;
     }
 }
 
 function connectSamples(valueCheck) {
     for (let index = 0; index < sampleStateArr.length; index++) {
-        const element = sampleStateArr[index];
+        var element = sampleStateArr[index];
         if (!element[valueCheck]) {
             print('CONNECT ' + element.id);
             element[valueCheck] = true;
             return;
         }
     }
+    printErr('all connected');
     allConnected = true;
 }
 
@@ -363,11 +408,11 @@ function getTurnSamples() {
         sample.rank = parseInt(inputs[2]);
         sample.expertiseGain = inputs[3];
         sample.health = parseInt(inputs[4]);
-        sample.costA = parseInt(inputs[5]) - me.expertiseA;
-        sample.costB = parseInt(inputs[6]) - me.expertiseB;
-        sample.costC = parseInt(inputs[7]) - me.expertiseC;
-        sample.costD = parseInt(inputs[8]) - me.expertiseD;
-        sample.costE = parseInt(inputs[9]) - me.expertiseE;
+        sample.costA = Math.max(0, parseInt(inputs[5]) - me.expertiseA);
+        sample.costB = Math.max(0, parseInt(inputs[6]) - me.expertiseB);
+        sample.costC = Math.max(0, parseInt(inputs[7]) - me.expertiseC);
+        sample.costD = Math.max(0, parseInt(inputs[8]) - me.expertiseD);
+        sample.costE = Math.max(0, parseInt(inputs[9]) - me.expertiseE);
         sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
         samples[id] = sample;
         samplesArr.push(sample);
