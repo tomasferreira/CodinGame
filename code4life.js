@@ -203,7 +203,7 @@ function fillState() {
     });
 
     if(carrying > 0){
-
+        //check for leftovers
     }
 }
 
