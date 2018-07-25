@@ -85,11 +85,11 @@ while (true) {
 
     var expertiseTotal = me.expertiseA + me.expertiseB + me.expertiseC + me.expertiseD + me.expertiseE;
 
-    if(expertiseTotal === changeRate1){
+    if (expertiseTotal === changeRate1) {
         sampleRank = 2;
     }
 
-    if(expertiseTotal === changeRate2){
+    if (expertiseTotal === changeRate2) {
         sampleRank = 3;
     }
 
@@ -103,6 +103,10 @@ while (true) {
     });
     var samples = samplesObj.samples;
 
+    if(sampleStateArr.length){
+        updateSamples();
+    }
+
     printErr('state: ' + mod);
     printErr('availability: ' + JSON.stringify(availability));
     printErr('player: ' + JSON.stringify(me));
@@ -114,8 +118,18 @@ while (true) {
     if (isMoving) {
         print('WAIT');
         printErr('Moving');
-        continue;
+    } else {
+        getAction();
     }
+}
+
+function updateSamples(){
+    sampleStateArr.forEach((sampleState) => {
+        let id = sampleState.id;
+    });
+}
+
+function getAction() {
 
     switch (mod) {
         case 'START_POS':
@@ -173,10 +187,6 @@ while (true) {
         default:
             break;
     }
-    //printErr(JSON.stringify(samples[sampleId]));
-    //printErr(JSON.stringify(me));
-
-    //printErr(JSON.stringify(samples));
 }
 
 function fillState() {
@@ -194,15 +204,11 @@ function fillState() {
             c: 0,
             d: 0,
             e: 0,
-            costA: sample.costA,
-            costB: sample.costB,
-            costC: sample.costC,
-            costD: sample.costD,
-            costE: sample.costE
+            
         });
     });
 
-    if(carrying > 0){
+    if (carrying > 0) {
         //check for leftovers
     }
 }
