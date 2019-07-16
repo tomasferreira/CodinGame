@@ -1,0 +1,35 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 5,
+        "sourceType": "script"
+    },
+    "globals": {
+        "printErr": true
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent": [
+            "error",
+            "tab",
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "no-useless-escape": [
+            "off"
+        ],
+        "no-ternary": ["error"],
+        "no-trailing-spaces": ["warn"],
+        "func-call-spacing": ["warn", "never"],
+        "linebreak-style": ["warn", "windows"],
+        "camelcase": ["warn"],
+    }
+}
