@@ -41,6 +41,8 @@ var sampleRank = 1;
 const changeRate1 = 5;
 const changeRate2 = 100;
 const totalSamples = 2;
+const maxIndMol = 5;
+const maxMol = 10;
 
 var mod = 'START_POS';
 var hasDiagnosis = false;
@@ -103,10 +105,6 @@ while (true) {
     });
     var samples = samplesObj.samples;
 
-    if(sampleStateArr.length){
-        updateSamples();
-    }
-
     printErr('state: ' + mod);
     printErr('availability: ' + JSON.stringify(availability));
     printErr('player: ' + JSON.stringify(me));
@@ -121,12 +119,6 @@ while (true) {
     } else {
         getAction();
     }
-}
-
-function updateSamples(){
-    sampleStateArr.forEach((sampleState) => {
-        let id = sampleState.id;
-    });
 }
 
 function getAction() {
@@ -199,18 +191,20 @@ function fillState() {
             isCheap: false,
             isDelivered: false,
             hasMolecules: false,
-            a: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            
-        });
-    });
+            a: storage.a,
+            b: storage.b,
+            c: storage.c,
+            d: storage.d,
+            e: storage.e,
 
-    if (carrying > 0) {
-        //check for leftovers
-    }
+        });
+
+        for (const mol in storage) {
+            if (storage.hasOwnProperty(mol)) {
+                storage[mol] = 0;                
+            }
+        }
+    });
 }
 
 function getSample() {
@@ -218,12 +212,30 @@ function getSample() {
 }
 
 function checkSamples() {
-    return sampleStateArr.every((elem) => {
+    let total = {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0,
+        e: 0
+    };
+    let isCheap = sampleStateArr.every((elem) => {
         let sample = samples[elem.id];
-        let isCheap = sample.costA < 6 && sample.costB < 6 && sample.costC < 6 && sample.costD < 6 && sample.costE < 6;
+        total.a += sample.costA;
+        total.b += sample.costB;
+        total.c += sample.costC;
+        total.d += sample.costD;
+        total.e += sample.costE;
+        let isCheap = sample.costA <= maxIndMol && sample.costB <= maxIndMol && sample.costC <= maxIndMol && sample.costD <= maxIndMol && sample.costE <= maxIndMol;
         elem.isCheap = isCheap;
         return isCheap;
     });
+
+    let totalByMol = total.a <= maxIndMol && total.b <= maxIndMol && total.c <= maxIndMol && total.d <= maxIndMol && total.e <= maxIndMol;
+
+    let totalCar = (total.a + total.b + total.c + total.d + total.e) <= maxMol;
+    printErr('mol: ' + totalByMol + ' car: ' + totalCar);
+    return isCheap && totalByMol && totalCar;
 }
 
 function getSampleId() {
@@ -305,19 +317,19 @@ function getMolecule() {
         return availability.e > 0;
     }
     function needsMoleculeA() {
-        return element.a !== samples[sampleId].costA;
+        return element.a < samples[sampleId].costA;
     }
     function needsMoleculeB() {
-        return element.b !== samples[sampleId].costB;
+        return element.b < samples[sampleId].costB;
     }
     function needsMoleculeC() {
-        return element.c !== samples[sampleId].costC;
+        return element.c < samples[sampleId].costC;
     }
     function needsMoleculeD() {
-        return element.d !== samples[sampleId].costD;
+        return element.d < samples[sampleId].costD;
     }
     function needsMoleculeE() {
-        return element.e !== samples[sampleId].costE;
+        return element.e < samples[sampleId].costE;
     }
 }
 
