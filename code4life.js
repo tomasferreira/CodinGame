@@ -142,84 +142,191 @@ const MODULES = {
     }
 };
 
-const turnData = [];
+const STATES = {
+    default: {
+        func: getDefaultAction,
+        id: 'default'
+    },
+    start: {
+        func: getStartAction,
+        id: 'start'
+    },
+    moving: {
+        func: getMovingAction,
+        id: 'moving'
+    },
+    sample: {
+        func: getSamplesAction,
+        id: 'sample'
+    },
+    diagnosis: {
+        func: getDiagAction,
+        id: 'diagnosis'
+    },
+    molecules: {
+        func: getMolAction,
+        id: 'molecules'
+    },
+    laboratory: {
+        func: getLabAction,
+        id: 'laboratory'
+    }
+};
+const INITIAL_STATE = STATES['start'].id;
+
+const turns = [];
 
 getProjectData();
 
-var turnCount = 0;
+// var turnCount = 0;
 
 while (true) {
-    var data = {};
-    turnData.push(data);
-
-    data.players = getTurnPlayers();
-    data.samples = getTurnSamples();
-    data.availability = getTurnAvailability();
-
-    turnCount++;
-
-}
-
-function getAction() {
-
-    switch (mod) {
-        case 'START_POS':
-            next();
-            break;
-        case 'SAMPLES':
-            if (!hasSamples) {
-                getSample();
-                if (mySamples.length === totalSamples - 1) {
-                    hasSamples = true;
-                    next();
-                }
-            }
-            break;
-        case 'DIAGNOSIS':
-            if (sampleStateArr.length === 0) {
-                fillState();
-            }
-            if (hasSamples && !allConnected) {
-                connectSamples('isDiagnosed');
-            } else {
-                if (hasSamples && checkSamples()) {
-                    next();
-                    allConnected = false;
-                } else if (hasSamples && !checkSamples()) {
-                    connectSamples('isCheap'); //deliver sample to the cloud
-                    allConnected = false;
-                    hasSamples = false;
-                } else {
-                    next('SAMPLES');
-                    sampleStateArr = [];
-                }
-            }
-            break;
-        case 'MOLECULES':
-            if (!hasMolecules) {
-                getMolecule();
-            }
-            if (hasMolecules) {
-                hasMolecules = false;
-                next();
-            }
-            break;
-        case 'LABORATORY':
-            if (!allConnected) {
-                connectSamples('isDelivered');
-            }
-            if (allConnected) {
-                next();
-                allConnected = false;
-                hasSamples = false;
-                sampleStateArr = [];
-            }
-            break;
-        default:
-            break;
+    let turn = {};
+    turn.players = getTurnPlayers();
+    turn.samples = getTurnSamples();
+    turn.availability = getTurnAvailability();
+    turn.previousState = getPreviousState();
+    if(!(turn.players && turn.samples && turn.availability && turn.previousState)){
+        printErr('ERROR');
     }
+    turns.push(turn);
+    turn.action = getAction(turn.previousState);
+
+    print(turn.action);
+    // turnCount++;
+
 }
 
+function getPreviousState(){
+    if(turns.length === 0) return INITIAL_STATE;
+    else return turns[turns.length - 2].state;
+}
+
+function getAction(state) {
+
+   let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
+//    printErr(stateFunction);
+//    printErr('hello');
+   return stateFunction.call(this);
+}
+
+
+// STATE-BASED ACTION FUNCTIONS:
+function getDefaultAction(){
+    return 'NO FUNCTION IS DEFINED FOR THE CURRENT STATE';
+}
+
+function getStartAction(){
+    return 'START ACTION';
+}
+
+function getMovingAction(){
+    return 'MOVING ACTION';
+}
+
+function getSamplesAction(){
+    return 'SAMPLES ACTION';
+}
+
+function getDiagAction(){
+    return 'DIAG ACTION';
+}
+
+function getMolAction(){
+    return 'MOL ACTION';
+}
+
+function getLabAction(){
+    return 'LAB ACTION';
+}
+
+
+// TURN INPUT GETTER FUNCTIONS:
+function getTurnPlayers() {
+    let players = [];
+    for (let i = 0; i < 2; i++) {
+        let player = {};
+        player.id = i;
+        let inputs = readline().split(' ');
+        player.target = inputs[0];
+        player.eta = parseInt(inputs[1]);
+        player.score = parseInt(inputs[2]);
+        player.storageA = parseInt(inputs[3]);
+        player.storageB = parseInt(inputs[4]);
+        player.storageC = parseInt(inputs[5]);
+        player.storageD = parseInt(inputs[6]);
+        player.storageE = parseInt(inputs[7]);
+        player.expertiseA = parseInt(inputs[8]);
+        player.expertiseB = parseInt(inputs[9]);
+        player.expertiseC = parseInt(inputs[10]);
+        player.expertiseD = parseInt(inputs[11]);
+        player.expertiseE = parseInt(inputs[12]);
+
+        players.push(player);
+    }
+
+    return players;
+}
+
+function getTurnAvailability() {
+    let inputs = readline().split(' ');
+    let a = parseInt(inputs[0]);
+    let b = parseInt(inputs[1]);
+    let c = parseInt(inputs[2]);
+    let d = parseInt(inputs[3]);
+    let e = parseInt(inputs[4]);
+
+    return {a, b, c, d, e};
+}
+
+function getTurnSamples() {
+    let sampleCount = parseInt(readline());
+    // printErr('Available samples: ' + sampleCount);
+    let samples = {};
+    let samplesArr = [];
+    for (let i = 0; i < sampleCount; i++) {
+        let sample = {};
+        let inputs = readline().split(' ');
+        let id = parseInt(inputs[0]);
+        sample.id = id;
+        sample.carriedBy = parseInt(inputs[1]);
+        sample.rank = parseInt(inputs[2]);
+        sample.expertiseGain = inputs[3];
+        sample.health = parseInt(inputs[4]);
+        sample.costA = parseInt(inputs[5]);
+        sample.costB = (inputs[6]);
+        sample.costC = parseInt(inputs[7]);
+        sample.costD = parseInt(inputs[8]);
+        sample.costE = parseInt(inputs[9]);
+        sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
+        samples[id] = sample;
+        samplesArr.push(sample);
+    }
+
+    return {
+        samples,
+        samplesArr
+    };
+}
+
+
+// GAME (INITIAL) GETTER FUNCTIONS:
+function getProjectData() {
+    let projects = [];
+    let projectCount = parseInt(readline());
+    for (var i = 0; i < projectCount; i++) {
+        let inputs = readline().split(' ');
+        let a = parseInt(inputs[0]);
+        let b = parseInt(inputs[1]);
+        let c = parseInt(inputs[2]);
+        let d = parseInt(inputs[3]);
+        let e = parseInt(inputs[4]);
+        projects.push({a, b, c, d, e});
+    }
+    return projects;
+}
+
+/*
 function fillState() {
     printErr('length: ' + mySamples.length);
     mySamples.forEach((sample) => {
@@ -396,87 +503,68 @@ function next(target) {
     isMoving = true;
 }
 
-function getProjectData() {
-    let projectCount = parseInt(readline());
-    for (var i = 0; i < projectCount; i++) {
-        let inputs = readline().split(' ');
-        let a = parseInt(inputs[0]);
-        let b = parseInt(inputs[1]);
-        let c = parseInt(inputs[2]);
-        let d = parseInt(inputs[3]);
-        let e = parseInt(inputs[4]);
+
+
+
+*/
+
+
+//TODO: check this logic:
+/*
+    switch (mod) {
+        case 'START_POS':
+            next();
+            break;
+        case 'SAMPLES':
+            if (!hasSamples) {
+                getSample();
+                if (mySamples.length === totalSamples - 1) {
+                    hasSamples = true;
+                    next();
+                }
+            }
+            break;
+        case 'DIAGNOSIS':
+            if (sampleStateArr.length === 0) {
+                fillState();
+            }
+            if (hasSamples && !allConnected) {
+                connectSamples('isDiagnosed');
+            } else {
+                if (hasSamples && checkSamples()) {
+                    next();
+                    allConnected = false;
+                } else if (hasSamples && !checkSamples()) {
+                    connectSamples('isCheap'); //deliver sample to the cloud
+                    allConnected = false;
+                    hasSamples = false;
+                } else {
+                    next('SAMPLES');
+                    sampleStateArr = [];
+                }
+            }
+            break;
+        case 'MOLECULES':
+            if (!hasMolecules) {
+                getMolecule();
+            }
+            if (hasMolecules) {
+                hasMolecules = false;
+                next();
+            }
+            break;
+        case 'LABORATORY':
+            if (!allConnected) {
+                connectSamples('isDelivered');
+            }
+            if (allConnected) {
+                next();
+                allConnected = false;
+                hasSamples = false;
+                sampleStateArr = [];
+            }
+            break;
+        default:
+            break;
     }
-}
-
-function getTurnPlayers() {
-    let players = [];
-    for (let i = 0; i < 2; i++) {
-        let player = {};
-        player.id = i;
-        let inputs = readline().split(' ');
-        player.target = inputs[0];
-        player.eta = parseInt(inputs[1]);
-        player.score = parseInt(inputs[2]);
-        player.storageA = parseInt(inputs[3]);
-        player.storageB = parseInt(inputs[4]);
-        player.storageC = parseInt(inputs[5]);
-        player.storageD = parseInt(inputs[6]);
-        player.storageE = parseInt(inputs[7]);
-        player.expertiseA = parseInt(inputs[8]);
-        player.expertiseB = parseInt(inputs[9]);
-        player.expertiseC = parseInt(inputs[10]);
-        player.expertiseD = parseInt(inputs[11]);
-        player.expertiseE = parseInt(inputs[12]);
-
-        players.push(player);
-    }
-
-    return players;
-}
-
-function getTurnAvailability() {
-    let inputs = readline().split(' ');
-    let a = parseInt(inputs[0]);
-    let b = parseInt(inputs[1]);
-    let c = parseInt(inputs[2]);
-    let d = parseInt(inputs[3]);
-    let e = parseInt(inputs[4]);
-
-    return {
-        a,
-        b,
-        c,
-        d,
-        e
-    };
-}
-
-function getTurnSamples() {
-    let sampleCount = parseInt(readline());
-    printErr('Available samples: ' + sampleCount);
-    let samples = {};
-    let samplesArr = [];
-    for (let i = 0; i < sampleCount; i++) {
-        let sample = {};
-        let inputs = readline().split(' ');
-        let id = parseInt(inputs[0]);
-        sample.id = id;
-        sample.carriedBy = parseInt(inputs[1]);
-        sample.rank = parseInt(inputs[2]);
-        sample.expertiseGain = inputs[3];
-        sample.health = parseInt(inputs[4]);
-        sample.costA = Math.max(0, parseInt(inputs[5]) - me.expertiseA);
-        sample.costB = Math.max(0, parseInt(inputs[6]) - me.expertiseB);
-        sample.costC = Math.max(0, parseInt(inputs[7]) - me.expertiseC);
-        sample.costD = Math.max(0, parseInt(inputs[8]) - me.expertiseD);
-        sample.costE = Math.max(0, parseInt(inputs[9]) - me.expertiseE);
-        sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
-        samples[id] = sample;
-        samplesArr.push(sample);
-    }
-
-    return {
-        samples,
-        samplesArr
-    };
-}
+    */
