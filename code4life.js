@@ -1,8 +1,8 @@
 // Steps:
-// Collect sample data files from the SAMPLES module.
-// Analyze sample data files at the DIAGNOSIS module to get a list of molecules for the associated medicine.
-// Gather required molecules for the medicines at the MOLECULES module.
-// Produce the medicines at the LABORATORY module and collect your health points.
+// - Collect sample data files from the SAMPLES module.
+// - Analyze sample data files at the DIAGNOSIS module to get a list of molecules for the associated medicine.
+// - Gather required molecules for the medicines at the MOLECULES module.
+// - Produce the medicines at the LABORATORY module and collect your health points.
 
 // Robots:
 // Each player has one robot. Both robots have the same starting position.
@@ -21,15 +21,14 @@
 // Molecule types: A, B, C, D, E
 
 // Modules:
-
 // The samples module:
-// Connecting to this module with CONNECT rank, where rank is an integer between 1 and 3, will transfer an undiagnosed sample data file of rank rank to your robot.
+// - Connecting to this module with CONNECT rank, where rank is an integer between 1 and 3, will transfer an undiagnosed sample data file of rank rank to your robot.
 
 // The diagnosis machine:
-// Connecting to this module with CONNECT id:
-// where id is the identifier of an undiagnosed sample data file the player is carrying, will change the sample's state to diagnosed.
-// where id is the identifier of a diagnosed sample data file the player is carrying, will transfer the sample data from the player to the cloud, where it will remain until a player takes it.
-// where id is the identifier of a diagnosed sample data file stored in the cloud, will transfer the sample data from the cloud to the player.
+// - Connecting to this module with CONNECT id:
+//   - where id is the identifier of an undiagnosed sample data file the player is carrying, will change the sample's state to diagnosed.
+//   - where id is the identifier of a diagnosed sample data file the player is carrying, will transfer the sample data from the player to the cloud, where it will remain until a player takes it.
+//   - where id is the identifier of a diagnosed sample data file stored in the cloud, will transfer the sample data from the cloud to the player.
 
 // The molecule distribution module:
 // Connecting to this module with CONNECT type, where type is one of the molecule types, will transfer an available molecule to your robot of the desired type.
@@ -156,6 +155,8 @@ while (true) {
     data.players = getTurnPlayers();
     data.samples = getTurnSamples();
     data.availability = getTurnAvailability();
+
+    turnCount++;
 
 }
 
