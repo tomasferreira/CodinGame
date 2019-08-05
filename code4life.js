@@ -51,10 +51,6 @@
 // Each science project is worth 50 health points. It can be completed by either player.
 // Each game starts out with 3 random active science projects. To complete one, players must gather the required amount of molecule expertise for each type (A,B,C,D & E).
 
-
-
-getUselessStuff();
-
 const MODULES = {
     START_POS: {
         id: 'START_POS',
@@ -109,88 +105,20 @@ const MODULES = {
     }
 };
 
-var sampleRank = 1;
-const changeRate1 = 5;
-const changeRate2 = 100;
-const totalSamples = 2;
-const maxIndMol = 5;
-const maxMol = 10;
+const turnData = [];
 
-var mod = 'START_POS';
-var hasDiagnosis = false;
-var hasMolecules = false;
-var isMoving = false;
-var hasSamples = false;
-var sampleIsGood = false;
-var allConnected = false;
+getProjectData();
 
-var timer = 1;
-
-var sampleStateArr = [];
+var turnCount = 0;
 
 while (true) {
-    printErr(' ');
-    printErr(' ');
-    printErr(' ');
+    var data = {};
+    turnData.push(data);
 
-    if (isMoving) {
-        if (timer === 0) {
-            printErr('Reached destination');
-            timer = 2;
-            isMoving = false;
-        } else {
-            timer--;
-        }
-    }
+    data.players = getTurnPlayers();
+    data.samples = getTurnSamples();
+    data.availability = getTurnAvailability();
 
-    var players = getTurnPlayers();
-    var me = players[0];
-    var storage = {
-        a: me.storageA,
-        b: me.storageB,
-        c: me.storageC,
-        d: me.storageD,
-        e: me.storageE
-    };
-
-    var carrying = storage.a + storage.b + storage.c + storage.d + storage.e;
-
-    var enemy = players[1];
-
-    var expertiseTotal = me.expertiseA + me.expertiseB + me.expertiseC + me.expertiseD + me.expertiseE;
-
-    if (expertiseTotal === changeRate1) {
-        sampleRank = 2;
-    }
-
-    if (expertiseTotal === changeRate2) {
-        sampleRank = 3;
-    }
-
-    var availability = getTurnAvailability();
-
-    let samplesObj = getTurnSamples();
-
-    var samplesArr = samplesObj.samplesArr;
-    var mySamples = samplesArr.filter((sample) => {
-        return sample.carriedBy === 0;
-    });
-    var samples = samplesObj.samples;
-
-    printErr('state: ' + mod);
-    printErr('availability: ' + JSON.stringify(availability));
-    printErr('player: ' + JSON.stringify(me));
-    //printErr('sample: ' + JSON.stringify(samples[sampleId]));
-    printErr('mySamples: ' + JSON.stringify(mySamples));
-    printErr('numSamples: ' + mySamples.length);
-    printErr('sampleState: ' + JSON.stringify(sampleStateArr));
-
-    if (isMoving) {
-        print('WAIT');
-        printErr('Moving');
-    } else {
-        getAction();
-    }
 }
 
 function getAction() {
@@ -429,7 +357,7 @@ function next(target) {
     isMoving = true;
 }
 
-function getUselessStuff() {
+function getProjectData() {
     let projectCount = parseInt(readline());
     for (var i = 0; i < projectCount; i++) {
         let inputs = readline().split(' ');
