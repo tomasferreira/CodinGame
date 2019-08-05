@@ -1,3 +1,58 @@
+// Steps:
+// Collect sample data files from the SAMPLES module.
+// Analyze sample data files at the DIAGNOSIS module to get a list of molecules for the associated medicine.
+// Gather required molecules for the medicines at the MOLECULES module.
+// Produce the medicines at the LABORATORY module and collect your health points.
+
+// Robots:
+// Each player has one robot. Both robots have the same starting position.
+// A robot can carry up to 3 sample data files and 10 molecules.
+// A player can move their robot from one module to another by means of the GOTO module command.
+// Once the robot is at a module's interface, it can connect to it with the CONNECT command. This will have a different effect for each module.
+// Moving from one module to another takes a number of turns depending on the distance involved (see matrix below).
+// Once movement has started, it cannot be interrupted. Any commands given by the player during the turns when the robot is mobile will be ignored.
+
+// Data:
+// A sample data file is an item representing all known data on a tissue sample collected from an untreated patient. Researching this sample may ultimately lead to the production of medicine to prolong the lives of all patients with the same ailment.
+// Sample data files can be in one of two states: undiagnosed (initial state) or diagnosed.
+// A diagnosed sample data is associated with the list of molecules needed to produce the medicine for that sample.
+// Each sample data file has a rank: 1, 2 or 3. The higher the rank, the more health points you will get from the medicine - but more molecules will be needed to produce the medicine.
+
+// Molecule types: A, B, C, D, E
+
+// Modules:
+
+// The samples module:
+// Connecting to this module with CONNECT rank, where rank is an integer between 1 and 3, will transfer an undiagnosed sample data file of rank rank to your robot.
+
+// The diagnosis machine:
+// Connecting to this module with CONNECT id:
+// where id is the identifier of an undiagnosed sample data file the player is carrying, will change the sample's state to diagnosed.
+// where id is the identifier of a diagnosed sample data file the player is carrying, will transfer the sample data from the player to the cloud, where it will remain until a player takes it.
+// where id is the identifier of a diagnosed sample data file stored in the cloud, will transfer the sample data from the cloud to the player.
+
+// The molecule distribution module:
+// Connecting to this module with CONNECT type, where type is one of the molecule types, will transfer an available molecule to your robot of the desired type.
+// The terminal will only provide a maximum of 5 molecules per type, until molecules are spent in the lab.
+
+// The laboratory module:
+// To use this module, the player's robot must be carrying a sample data file as well as the required amount of molecules for producing that sample's medicine.
+// Connecting to this module with CONNECT id where id is the identifier of a sample data the player can research, will have several effects:
+// The sample data id as well as the associated molecules are removed from play.
+// The players scores as many points as the sample's health points.
+// The player acquires molecule expertise: the robot will need 1 less molecule of the type specified by the sample for producing all subsequent medicines.
+
+// Concurrency:
+// In the event that both players try to take sample data from the cloud on the same turn, only the player who had previously diagnosed this sample will successfully complete the transfer.
+// In the event that both players request the last molecule of a given type, the module will provide an extra molecule but will wait for at least 2 molecules of that type to be spent in the lab before providing new ones.
+
+// Science projects
+// In addition to scoring points by helping Roche create new medicine for untreated diseases, a player may also further apply medical science by completing Science projects.
+// Each science project is worth 50 health points. It can be completed by either player.
+// Each game starts out with 3 random active science projects. To complete one, players must gather the required amount of molecule expertise for each type (A,B,C,D & E).
+
+
+
 getUselessStuff();
 
 const modules = {
