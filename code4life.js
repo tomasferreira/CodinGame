@@ -55,31 +55,57 @@
 
 getUselessStuff();
 
-const modules = {
+const MODULES = {
     START_POS: {
         id: 'START_POS',
         nextModule: 'SAMPLES',
-        previousModule: 'NULL'
+        previousModule: 'NULL',
+        distances: {
+            SAMPLES: 2,
+            DIAGNOSIS: 2,
+            MOLECULES: 2,
+            LABORATORY: 2
+        }
     },
     SAMPLES: {
         id: 'SAMPLES',
         nextModule: 'DIAGNOSIS',
-        previousModule: 'LABORATORY'
+        previousModule: 'LABORATORY',
+        distances: {
+            DIAGNOSIS: 3,
+            MOLECULES: 3,
+            LABORATORY: 3
+        }
     },
     DIAGNOSIS: {
         id: 'DIAGNOSIS',
         nextModule: 'MOLECULES',
-        previousModule: 'SAMPLES'
+        previousModule: 'SAMPLES',
+        distances: {
+            SAMPLES: 3,
+            MOLECULES: 3,
+            LABORATORY: 4
+        }
     },
     MOLECULES: {
         id: 'MOLECULES',
         nextModule: 'LABORATORY',
-        previousModule: 'DIAGNOSIS'
+        previousModule: 'DIAGNOSIS',
+        distances: {
+            SAMPLES: 3,
+            DIAGNOSIS: 3,
+            LABORATORY: 3
+        }
     },
     LABORATORY: {
         id: 'LABORATORY',
         nextModule: 'SAMPLES',
-        previousModule: 'MOLECULES'
+        previousModule: 'MOLECULES',
+        distances: {
+            SAMPLES: 3,
+            DIAGNOSIS: 4,
+            MOLECULES: 3,
+        }
     }
 };
 
@@ -394,8 +420,8 @@ function connectSamples(valueCheck) {
 
 function next(target) {
     if (typeof target == 'undefined') {
-        print('GOTO ' + modules[mod].nextModule);
-        mod = modules[mod].nextModule;
+        print('GOTO ' + MODULES[mod].nextModule);
+        mod = MODULES[mod].nextModule;
     } else {
         print('GOTO ' + target);
         mod = target;
