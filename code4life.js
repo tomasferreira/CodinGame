@@ -51,6 +51,44 @@
 // Each science project is worth 50 health points. It can be completed by either player.
 // Each game starts out with 3 random active science projects. To complete one, players must gather the required amount of molecule expertise for each type (A,B,C,D & E).
 
+// Constraints:
+// Health points scored with a rank 1 sample = 1 or 10
+// Health points scored with a rank 2 sample = 10, 20 or 30
+// Health points scored with a rank 3 sample = 30, 40 or 50
+// 3≤ Total molecule cost for a rank 1 sample ≤5
+// 5≤ Total molecule cost for a rank 2 sample ≤8
+// 7≤ Total molecule cost for a rank 3 sample ≤14
+// Response time for first turn ≤ 1000ms
+// Response time for one turn ≤ 50ms
+
+// Initialization input:
+// Line 1:projectCount, number of science projects.
+// Next projectCount lines: 5 integers, the required amount of molecule expertise needed for each type.
+
+// Input for one game turn:
+// For each player, 1 line: 1 string followed by 12 integers (you are always the first player):
+// target: module where the player is or is going to.
+// eta: number of turns before reaching the module (if greater than 0 the player's action will be ignored).
+// score: the player's number of health points
+// storageA, storageB, storageC, storageD, storageE: number of molecules held by the player for each molecule type.
+// expertiseA, expertiseB, expertiseC, expertiseD, expertiseE: the molecule expertise for each molecule type.
+// Next line:availableA, availableB, availableC, availableD, availableE: 5 integers, the number of available molecules for each type.
+
+// Next line:sampleCount: the number of samples currently in the game.
+// Next sampleCount lines:
+// sampleId: unique id for the sample.
+// carriedBy: 0 if the sample is carried by you, 1 by the other robot, -1 if the sample is in the cloud.
+// rank: rank of the sample 1, 2 or 3.
+// gain: expertise molecule gained when researching this sample A B C D or E.
+// health: number of health points you gain from this sample.
+// costA, costB, costC, costD, costE: number of molecules of each type needed to research the sample
+
+// Output for one game turn:
+// Each turn issue one of the following command:
+// GOTO module: move towards the target module.
+// CONNECT id/type/ rank: connect to the target module with the specified sample id or retrieve a sample of a given rank at the SAMPLES module, or molecule of the given type at the MOLECULES module.
+// WAIT: do nothing.
+
 const MODULES = {
     START_POS: {
         id: 'START_POS',
