@@ -144,31 +144,31 @@ const MODULES = {
 
 const STATES = {
     default: {
-        func: getDefaultAction,
+        func: getDefaultActionAndState,
         id: 'default'
     },
     start: {
-        func: getStartAction,
+        func: getStartActionAndState,
         id: 'start'
     },
     moving: {
-        func: getMovingAction,
+        func: getMovingActionAndState,
         id: 'moving'
     },
     sample: {
-        func: getSamplesAction,
+        func: getSamplesActionAndState,
         id: 'sample'
     },
     diagnosis: {
-        func: getDiagAction,
+        func: getDiagActionAndState,
         id: 'diagnosis'
     },
     molecules: {
-        func: getMolAction,
+        func: getMolActionAndState,
         id: 'molecules'
     },
     laboratory: {
-        func: getLabAction,
+        func: getLabActionAndState,
         id: 'laboratory'
     }
 };
@@ -178,8 +178,6 @@ const turns = [];
 
 getProjectData();
 
-// var turnCount = 0;
-
 while (true) {
     let turn = {};
     turn.players = getTurnPlayers();
@@ -187,21 +185,25 @@ while (true) {
     turn.samples = getTurnSamples();
     turn.previousState = getPreviousState();
     turns.push(turn);
-    turn.action = getAction(turn.previousState);
+
+    let actionState = getActionAndState(turn.previousState);
+    turn.action = actionState.action;
+    turn.state  = actionState.state;
+
+    // printErr(turn);
 
     print(turn.action);
-    // turnCount++;
-
 }
 
 function getPreviousState(){
     if(turns.length === 0) return INITIAL_STATE;
-    else return turns[turns.length - 2].state;
+    else return turns[turns.length - 1].state;
 }
 
-function getAction(state) {
+function getActionAndState(state) {
 
    let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
+   printErr(stateFunction);
    return stateFunction.call(this);
 }
 
@@ -211,32 +213,51 @@ function getAction(state) {
 //// STATE-BASED ACTION FUNCTIONS: ////
 ///////////////////////////////////////
 ///////////////////////////////////////
-function getDefaultAction(){
-    return 'NO FUNCTION IS DEFINED FOR THE CURRENT STATE';
+function getDefaultActionAndState(){
+    let action = 'WAIT';
+    let state = 'waiting';
+    return {action, state};
 }
 
-function getStartAction(){
-    return 'START ACTION';
+function getStartActionAndState(){
+    let action = 'GOTO SAMPLES';
+    let state = 'moving';
+    return {action, state};
 }
 
-function getMovingAction(){
-    return 'MOVING ACTION';
+function getMovingActionAndState(){
+    printErr('MOVING ACTION');
+    let action = '';
+    let state = '';
+    return {action, state};
 }
 
-function getSamplesAction(){
-    return 'SAMPLES ACTION';
+function getSamplesActionAndState(){
+    printErr('SAMPLES ACTION');
+    let action = '';
+    let state = '';
+    return {action, state};
 }
 
-function getDiagAction(){
-    return 'DIAG ACTION';
+function getDiagActionAndState(){
+    printErr('DIAG ACTION');
+    let action = '';
+    let state = '';
+    return {action, state};
 }
 
-function getMolAction(){
-    return 'MOL ACTION';
+function getMolActionAndState(){
+    printErr('MOL ACTION');
+    let action = '';
+    let state = '';
+    return {action, state};
 }
 
-function getLabAction(){
-    return 'LAB ACTION';
+function getLabActionAndState(){
+    printErr('LAB ACTION');
+    let action = '';
+    let state = '';
+    return {action, state};
 }
 
 
@@ -279,37 +300,28 @@ function getTurnAvailability() {
     let d = parseInt(inputs[3]);
     let e = parseInt(inputs[4]);
 
-    printErr({a,
-        b,
-        c,
-        d,
-        e});
+    return {a, b, c, d, e};
 }
 
 function getTurnSamples() {
     let sampleCount = parseInt(readline());
     let samples = {};
     for (let i = 0; i < sampleCount; i++) {
-        printErr(i);
         let sample = {};
         let inputs = readline().split(' ');
         let id = parseInt(inputs[0]);
         sample.id = id;
-        printErr(id);
         sample.carriedBy = parseInt(inputs[1]);
         sample.rank = parseInt(inputs[2]);
         sample.expertiseGain = inputs[3];
         sample.health = parseInt(inputs[4]);
-        printErr(sample.health);
         sample.costA = parseInt(inputs[5]);
         sample.costB = parseInt(inputs[6]);
         sample.costC = parseInt(inputs[7]);
         sample.costD = parseInt(inputs[8]);
         sample.costE = parseInt(inputs[9]);
         sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
-        printErr(sample.totalSampleCost);
         samples[id] = sample;
-        printErr(samples);
     }
     return samples;
 }
