@@ -28,7 +28,7 @@
         "no-useless-escape": [
             "off"
         ],
-        "no-ternary": ["error"],
+        // "no-ternary": ["error"],
         "no-trailing-spaces": ["warn"],
         "func-call-spacing": ["warn", "never"],
         "camelcase": ["warn"],
