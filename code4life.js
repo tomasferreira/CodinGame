@@ -1,12 +1,3 @@
-/*eslint indent: ["error", 4, { "SwitchCase": 1 }]*/
-/*global print readline printErr*/
-/*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
-/*eslint no-unused-vars: 0*/
-
-/**
- * Bring data on patient samples from the diagnosis machine to the laboratory with enough molecules to produce medicine!
- **/
-
 getUselessStuff();
 
 const modules = {
