@@ -144,31 +144,31 @@ const MODULES = {
 
 const STATES = {
     default: {
-        func: getDefaultActionAndState,
+        func: getDefaultTurn,
         id: 'default'
     },
     start: {
-        func: getStartActionAndState,
+        func: getStartTurn,
         id: 'start'
     },
     moving: {
-        func: getMovingActionAndState,
+        func: getMovingTurn,
         id: 'moving'
     },
     sample: {
-        func: getSamplesActionAndState,
+        func: getSamplesTurn,
         id: 'sample'
     },
     diagnosis: {
-        func: getDiagActionAndState,
+        func: getDiagTurn,
         id: 'diagnosis'
     },
     molecules: {
-        func: getMolActionAndState,
+        func: getMolTurn,
         id: 'molecules'
     },
     laboratory: {
-        func: getLabActionAndState,
+        func: getLabTurn,
         id: 'laboratory'
     }
 };
@@ -179,20 +179,28 @@ const turns = [];
 getProjectData();
 
 while (true) {
-    let turn = {};
-    turn.players = getTurnPlayers();
-    turn.availability = getTurnAvailability();
-    turn.samples = getTurnSamples();
-    turn.previousState = getPreviousState();
-    turns.push(turn);
+    let turnData = {};
+    turnData.players = getTurnPlayers();
+    turnData.availability = getTurnAvailability();
+    turnData.samples = getTurnSamples();
+    turnData.previousState = getPreviousState();
+    turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
+    turns.push(turnData);
 
-    let actionState = getActionAndState(turn.previousState);
-    turn.action = actionState.action;
-    turn.state  = actionState.state;
+    let turn = getTurn(turnData);
+    turnData.action = turn.action;
+    turnData.state  = turn.state;
+    if(turn.movingCounter) turnData.movingCounter =+ turn.movingCounter;
+    turnData.target = turn.target || '';
 
-    // printErr(turn);
+    printErr(turnData);
 
-    print(turn.action);
+    print(turnData.action);
+}
+
+function getPreviousMovingCounter(){
+    if(turns.length === 0) return 0;
+    else return turns[turns.length - 1].movingCounter === 0 ? 0 : turns[turns.length - 1].movingCounter;
 }
 
 function getPreviousState(){
@@ -200,11 +208,14 @@ function getPreviousState(){
     else return turns[turns.length - 1].state;
 }
 
-function getActionAndState(state) {
+function getTurn(turn) {
+    if(turn.movingCounter !== 0){
+        return getMovingTurn(turn);
+    }
 
-   let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
-   printErr(stateFunction);
-   return stateFunction.call(this);
+    let state = turn.previousState;
+    let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
+    return stateFunction.call(this, turn);
 }
 
 
@@ -213,47 +224,47 @@ function getActionAndState(state) {
 //// STATE-BASED ACTION FUNCTIONS: ////
 ///////////////////////////////////////
 ///////////////////////////////////////
-function getDefaultActionAndState(){
+function getDefaultTurn(turn){
     let action = 'WAIT';
     let state = 'waiting';
     return {action, state};
 }
 
-function getStartActionAndState(){
+function getStartTurn(turn){
     let action = 'GOTO SAMPLES';
-    let state = 'moving';
+    let state = 'samples';
+    let movingCounter = MODULES.START_POS.distances.SAMPLES;
+    return {action, state, movingCounter};
+}
+
+function getMovingTurn(turn){
+    let action = 'WAIT';
+    let state = turn.previousState;
     return {action, state};
 }
 
-function getMovingActionAndState(){
-    printErr('MOVING ACTION');
-    let action = '';
-    let state = '';
-    return {action, state};
-}
-
-function getSamplesActionAndState(){
+function getSamplesTurn(turn){
     printErr('SAMPLES ACTION');
     let action = '';
     let state = '';
     return {action, state};
 }
 
-function getDiagActionAndState(){
+function getDiagTurn(turn){
     printErr('DIAG ACTION');
     let action = '';
     let state = '';
     return {action, state};
 }
 
-function getMolActionAndState(){
+function getMolTurn(turn){
     printErr('MOL ACTION');
     let action = '';
     let state = '';
     return {action, state};
 }
 
-function getLabActionAndState(){
+function getLabTurn(turn){
     printErr('LAB ACTION');
     let action = '';
     let state = '';
