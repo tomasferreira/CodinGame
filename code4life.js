@@ -201,7 +201,7 @@ function fillState() {
 
         for (const mol in storage) {
             if (storage.hasOwnProperty(mol)) {
-                storage[mol] = 0;                
+                storage[mol] = 0;
             }
         }
     });
