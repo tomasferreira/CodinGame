@@ -183,12 +183,9 @@ getProjectData();
 while (true) {
     let turn = {};
     turn.players = getTurnPlayers();
-    turn.samples = getTurnSamples();
     turn.availability = getTurnAvailability();
+    turn.samples = getTurnSamples();
     turn.previousState = getPreviousState();
-    if(!(turn.players && turn.samples && turn.availability && turn.previousState)){
-        printErr('ERROR');
-    }
     turns.push(turn);
     turn.action = getAction(turn.previousState);
 
@@ -205,13 +202,15 @@ function getPreviousState(){
 function getAction(state) {
 
    let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
-//    printErr(stateFunction);
-//    printErr('hello');
    return stateFunction.call(this);
 }
 
 
-// STATE-BASED ACTION FUNCTIONS:
+///////////////////////////////////////
+///////////////////////////////////////
+//// STATE-BASED ACTION FUNCTIONS: ////
+///////////////////////////////////////
+///////////////////////////////////////
 function getDefaultAction(){
     return 'NO FUNCTION IS DEFINED FOR THE CURRENT STATE';
 }
@@ -241,7 +240,11 @@ function getLabAction(){
 }
 
 
-// TURN INPUT GETTER FUNCTIONS:
+//////////////////////////////////////
+//////////////////////////////////////
+//// TURN INPUT GETTER FUNCTIONS: ////
+//////////////////////////////////////
+//////////////////////////////////////
 function getTurnPlayers() {
     let players = [];
     for (let i = 0; i < 2; i++) {
@@ -276,41 +279,46 @@ function getTurnAvailability() {
     let d = parseInt(inputs[3]);
     let e = parseInt(inputs[4]);
 
-    return {a, b, c, d, e};
+    printErr({a,
+        b,
+        c,
+        d,
+        e});
 }
 
 function getTurnSamples() {
     let sampleCount = parseInt(readline());
-    // printErr('Available samples: ' + sampleCount);
     let samples = {};
-    let samplesArr = [];
     for (let i = 0; i < sampleCount; i++) {
+        printErr(i);
         let sample = {};
         let inputs = readline().split(' ');
         let id = parseInt(inputs[0]);
         sample.id = id;
+        printErr(id);
         sample.carriedBy = parseInt(inputs[1]);
         sample.rank = parseInt(inputs[2]);
         sample.expertiseGain = inputs[3];
         sample.health = parseInt(inputs[4]);
+        printErr(sample.health);
         sample.costA = parseInt(inputs[5]);
-        sample.costB = (inputs[6]);
+        sample.costB = parseInt(inputs[6]);
         sample.costC = parseInt(inputs[7]);
         sample.costD = parseInt(inputs[8]);
         sample.costE = parseInt(inputs[9]);
         sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
+        printErr(sample.totalSampleCost);
         samples[id] = sample;
-        samplesArr.push(sample);
+        printErr(samples);
     }
-
-    return {
-        samples,
-        samplesArr
-    };
+    return samples;
 }
 
-
-// GAME (INITIAL) GETTER FUNCTIONS:
+//////////////////////////////////////////
+//////////////////////////////////////////
+//// GAME (INITIAL) GETTER FUNCTIONS: ////
+//////////////////////////////////////////
+//////////////////////////////////////////
 function getProjectData() {
     let projects = [];
     let projectCount = parseInt(readline());
