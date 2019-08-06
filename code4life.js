@@ -238,8 +238,8 @@ function getDiagTurn(turn) {
     //if all are diagnosed, move to mols
     //if mysamp is empty, return to samples
     let ret = {};
-    ret.action = '';
-    ret.state = '';
+    ret.action = 'WAIT';
+    ret.state = DIAGNOSIS;
 
     if(turn.mySamples.size < 1){
         ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
@@ -248,9 +248,15 @@ function getDiagTurn(turn) {
     } else {
         for(let i in turn.mySamples){
             let sample = turn.mySamples[i];
-            // printErr(sample);
-            //SAMPLE IS SOMEHOW THE WHOLE ARRAY!!! PLEASE FIXX
+            if(sample.totalSampleCost <= 0){
+                ret.action = 'CONNECT ' + sample.id;
+                return ret;
+            }
         }
+
+        ret.action = 'GOTO ' + MODULES.MOLECULES.ID;
+        ret.state = MOLECULES;
+        ret.movingCounter = MODULES.DIAGNOSIS.LABORATORY;
     }
 
     return ret;
