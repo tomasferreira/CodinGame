@@ -121,15 +121,14 @@ const MODULES = {
 		ID: 'LABORATORY'
 	}
 };
-//STATES:
-const START = 'start';
-const SAMPLES = 'samples';
-const DIAGNOSIS = 'diagnosis';
-const MOLECULES = 'molecules';
-const LAB = 'laboratory';
-const WAITING = 'waiting';
 
-const INITIAL_STATE = START;
+//STATES:
+const START_POS = 'START_POS';
+const SAMPLES = 'SAMPLES';
+const DIAGNOSIS = 'DIAGNOSIS';
+const MOLECULES = 'MOLECULES';
+const LABORATORY = 'LABORATORY';
+const WAITING = 'WAITING';
 
 const FUNCTIONS = {
 	default: getDefaultTurn,
@@ -141,7 +140,8 @@ const FUNCTIONS = {
 	laboratory: getLabTurn,
 };
 const IS_PLAYING = true;
-const MAX_MOL = 1;
+const MAX_MOL = 3;
+const MOLS_PER_TURN = 1;
 const turns = [];
 
 getProjectData();
@@ -180,7 +180,7 @@ function getPreviousMovingCounter() {
 }
 
 function getPreviousState() {
-	if (turns.length === 0) return INITIAL_STATE;
+	if (turns.length === 0) return START_POS;
 	else return turns[turns.length - 1].state;
 }
 
@@ -207,10 +207,7 @@ function getDefaultTurn() {
 }
 
 function getStartTurn() {
-	let action = 'GOTO ' + MODULES.SAMPLES.ID;
-	let state = SAMPLES;
-	let movingCounter = MODULES.START_POS.SAMPLES;
-	return { action, state, movingCounter };
+	return goTo(START_POS, SAMPLES);
 }
 
 function getMovingTurn(turn) {
@@ -227,11 +224,8 @@ function getSamplesTurn(turn) {
 		let sampleRank = getNextRank();
 		ret.action = 'CONNECT ' + sampleRank;
 	} else {
-		ret.action = 'GOTO ' + MODULES.DIAGNOSIS.ID;
-		ret.state = DIAGNOSIS;
-		ret.movingCounter = MODULES.SAMPLES.DIAGNOSIS;
+		return goTo(SAMPLES, DIAGNOSIS);
 	}
-
 	return ret;
 }
 
@@ -244,9 +238,7 @@ function getDiagTurn(turn) {
 	ret.state = DIAGNOSIS;
 
 	if(turn.mySamples.size < 1){
-		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-		ret.state = SAMPLES;
-		ret.movingCounter = MODULES.DIAGNOSIS.SAMPLES;
+		return goTo(DIAGNOSIS, SAMPLES);
 	} else {
 		for(let i in turn.mySamples){
 			let sample = turn.mySamples[i];
@@ -259,13 +251,8 @@ function getDiagTurn(turn) {
 				return ret;
 			}
 		}
-
-		ret.action = 'GOTO ' + MODULES.MOLECULES.ID;
-		ret.state = MOLECULES;
-		ret.movingCounter = MODULES.DIAGNOSIS.MOLECULES;
+		return goTo(DIAGNOSIS, MODULES);
 	}
-
-	return ret;
 }
 
 function getMolTurn(turn) {
@@ -274,39 +261,36 @@ function getMolTurn(turn) {
 	ret.state = MOLECULES;
 
 	if(turn.mySamples.size < 1){
-		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-		ret.state = SAMPLES;
-		ret.movingCounter = MODULES.MOLECULES.SAMPLES;
+		return goTo(MOLECULES, SAMPLES);
 	} else {
 		for(let i in turn.mySamples){
 			let sample = turn.mySamples[i];
-
 			//we only want the samples and not the rest of the properties like isFull and size
 			if(typeof sample !== 'object') continue;
 
-			let molID = getNextMolID(turn, sample);
-			if(molID === null) continue;
+			if(isSampleComplete(sample, turn)){
+				return goTo(MOLECULES.LABORATORY);
+			}
+			let avail = turn.availability;
+			let storage = turn.me.storage;
+
+			let molID = getNextMolID(sample, avail, storage);
+
+			// if(molID === null) continue;
+
 			ret.action = 'CONNECT ' + molID;
 			return ret;
-			//GET ALL MOLS
-			//CHANGE ISCOMPLETE
 		}
-		ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
-		ret.state = LAB;
-		ret.movingCounter = MODULES.MOLECULES.LABORATORY;
 	}
-	return ret;
 }
 
 function getLabTurn(turn) {
 	let ret = {};
 	ret.action = 'WAIT';
-	ret.state = LAB;
+	ret.state = LABORATORY;
 
 	if(turn.mySamples.size < 1){
-		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-		ret.state = SAMPLES;
-		ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+		return goTo(LABORATORY, SAMPLES);
 	} else {
 		for(let i in turn.mySamples){
 			let sample = turn.mySamples[i];
@@ -314,16 +298,13 @@ function getLabTurn(turn) {
 			//we only want the samples and not the rest of the properties like isFull and size
 			if(typeof sample !== 'object') continue;
 
-			// if(sample.isComplete){
-			ret.action = 'CONNECT ' + sample.id;
-			return ret;
-			// }
+			if(isSampleComplete(sample, turn)){
+				ret.action = 'CONNECT ' + sample.id;
+				return ret;
+			}
 		}
-		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-		ret.state = SAMPLES;
-		ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+		return goTo(LABORATORY, SAMPLES);
 	}
-	return ret;
 }
 
 ///////////////////////////
@@ -335,10 +316,7 @@ function getNextRank(){
 	return 1;
 }
 
-function getNextMolID(turn, sample){
-	// let id = '';
-	let avail = turn.availability;
-	let storage = turn.me.storage;
+function getNextMolID(sample, avail, storage){
 
 	printErr('sample', sample);
 	printErr('avail', avail);
@@ -365,6 +343,21 @@ function getNextMolID(turn, sample){
 	}
 
 	return null;
+}
+
+function isSampleComplete(sample, turn){
+	let cost = sample.cost;
+	let storage = turn.me.storage;
+	return storage.a >= cost.a && storage.b >= cost.b && storage.c >= cost.c && storage.d >= cost.d && storage.e >= cost.e;
+}
+
+function goTo(start, target){
+	let ret = {};
+	ret.action = 'GOTO ' + MODULES[target].ID;
+	ret.state = target;
+	ret.movingCounter = MODULES[start][target];
+
+	return ret;
 }
 
 //////////////////////////////////////
