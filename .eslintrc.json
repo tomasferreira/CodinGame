@@ -31,8 +31,8 @@
         // "no-ternary": ["error"],
         "no-trailing-spaces": ["warn"],
         "func-call-spacing": ["warn", "never"],
-        "camelcase": ["warn"],
-        "no-constant-condition": "off"
+        "camelcase": ["warn"]
+        // "no-constant-condition": "off"
 
     }
 }
