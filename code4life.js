@@ -132,12 +132,12 @@ const WAITING = 'WAITING';
 
 const FUNCTIONS = {
 	default: getDefaultTurn,
-	start: getStartTurn,
+	START_POS: getStartTurn,
 	moving: getMovingTurn,
-	samples: getSamplesTurn,
-	diagnosis: getDiagTurn,
-	molecules: getMolTurn,
-	laboratory: getLabTurn,
+	SAMPLES: getSamplesTurn,
+	DIAGNOSIS: getDiagTurn,
+	MOLECULES: getMolTurn,
+	LABORATORY: getLabTurn,
 };
 const IS_PLAYING = true;
 const MAX_MOL = 3;
@@ -154,6 +154,7 @@ while (IS_PLAYING) {
 	turnData.op = players.op;
 	turnData.availability = getTurnAvailability();
 	let samples = getTurnSamples();
+	printErr(samples);
 	turnData.mySamples = samples.mySamples;
 	turnData.opSamples = samples.opSamples;
 	turnData.unCarriedSamples = samples.unCarriedSamples;
@@ -201,6 +202,7 @@ function getTurn(turn) {
 ///////////////////////////////////////
 ///////////////////////////////////////
 function getDefaultTurn() {
+	printErr('DEFAULT');
 	let action = 'WAIT';
 	let state = WAITING;
 	return { action, state };
@@ -220,7 +222,7 @@ function getSamplesTurn(turn) {
 	let ret = {};
 	ret.action = 'WAIT';
 	ret.state = SAMPLES;
-	if (turn.mySamples.size < MAX_MOL) {
+	if (turn.mySamples.length < MAX_MOL) {
 		let sampleRank = getNextRank();
 		ret.action = 'CONNECT ' + sampleRank;
 	} else {
@@ -240,18 +242,14 @@ function getDiagTurn(turn) {
 	if(turn.mySamples.size < 1){
 		return goTo(DIAGNOSIS, SAMPLES);
 	} else {
-		for(let i in turn.mySamples){
-			let sample = turn.mySamples[i];
-
-			//we only want the samples and not the rest of the properties like isFull and size
-			if(typeof sample !== 'object') continue;
+		for(let sample of turn.mySamples){
 
 			if(sample.cost.total <= 0){
 				ret.action = 'CONNECT ' + sample.id;
 				return ret;
 			}
 		}
-		return goTo(DIAGNOSIS, MODULES);
+		return goTo(DIAGNOSIS, MOLECULES);
 	}
 }
 
@@ -263,20 +261,18 @@ function getMolTurn(turn) {
 	if(turn.mySamples.size < 1){
 		return goTo(MOLECULES, SAMPLES);
 	} else {
-		for(let i in turn.mySamples){
-			let sample = turn.mySamples[i];
-			//we only want the samples and not the rest of the properties like isFull and size
-			if(typeof sample !== 'object') continue;
+		for(let sample of turn.mySamples){
 
 			if(isSampleComplete(sample, turn)){
-				return goTo(MOLECULES.LABORATORY);
+				return goTo(MOLECULES, LABORATORY);
 			}
 			let avail = turn.availability;
 			let storage = turn.me.storage;
 
 			let molID = getNextMolID(sample, avail, storage);
 
-			// if(molID === null) continue;
+			//if we can't find mol for this sample, wait one turn
+			if(molID === null) return ret;
 
 			ret.action = 'CONNECT ' + molID;
 			return ret;
@@ -289,21 +285,17 @@ function getLabTurn(turn) {
 	ret.action = 'WAIT';
 	ret.state = LABORATORY;
 
-	if(turn.mySamples.size < 1){
+	if(turn.mySamples.length < 1){
 		return goTo(LABORATORY, SAMPLES);
 	} else {
-		for(let i in turn.mySamples){
-			let sample = turn.mySamples[i];
-
-			//we only want the samples and not the rest of the properties like isFull and size
-			if(typeof sample !== 'object') continue;
+		for(let sample of turn.mySamples){
 
 			if(isSampleComplete(sample, turn)){
 				ret.action = 'CONNECT ' + sample.id;
 				return ret;
 			}
 		}
-		return goTo(LABORATORY, SAMPLES);
+		return goTo(LABORATORY, MOLECULES);
 	}
 }
 
@@ -352,6 +344,7 @@ function isSampleComplete(sample, turn){
 }
 
 function goTo(start, target){
+	printErr('goto', start, target);
 	let ret = {};
 	ret.action = 'GOTO ' + MODULES[target].ID;
 	ret.state = target;
@@ -407,12 +400,11 @@ function getTurnAvailability() {
 
 function getTurnSamples() {
 	let sampleCount = parseInt(readline());
-	let mySamples = { size: 0, isFull: false };
-	let opSamples = { isEmpty: true };
-	let unCarriedSamples = { isEmpty: true };
+	let mySamples = [];
+	let opSamples = [];
+	let unCarriedSamples = [];
 	for (let i = 0; i < sampleCount; i++) {
 		let sample = {};
-		sample.isComplete = false;
 		let inputs = readline().split(' ');
 		let id = parseInt(inputs[0]);
 		sample.id = id;
@@ -429,16 +421,13 @@ function getTurnSamples() {
 		sample.cost.total = sample.cost.a + sample.cost.b + sample.cost.c + sample.cost.d + sample.cost.e;
 		switch (carriedBy) {
 			case 0:
-				mySamples[id] = sample;
-				mySamples.size++;
+				mySamples.push(sample);
 				break;
 			case 1:
-				opSamples[id] = sample;
-				opSamples.isEmpty = false;
+				opSamples.push(sample);
 				break;
 			case 2:
-				unCarriedSamples[id] = sample;
-				unCarriedSamples.isEmpty = false;
+				unCarriedSamples.push(sample);
 				break;
 		}
 	}
