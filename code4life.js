@@ -286,12 +286,16 @@ function getMolTurn(turn) {
 
             printErr('sample', sample);
             printErr('avail', turn.availability);
+            let molID = getNextMolID(turn, sample);
+            if(molID === null) continue;
+            ret.action = 'CONNECT ' + molID;
+            return ret;
             //GET ALL MOLS
             //CHANGE ISCOMPLETE
         }
-        // ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
-        // ret.state = LAB;
-        // ret.movingCounter = MODULES.MOLECULES.LABORATORY;
+        ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
+        ret.state = LAB;
+        ret.movingCounter = MODULES.MOLECULES.LABORATORY;
     }
     return ret;
 }
@@ -312,10 +316,10 @@ function getLabTurn(turn) {
             //we only want the samples and not the rest of the properties like isFull and size
             if(typeof sample !== 'object') continue;
 
-            if(sample.isComplete){
+            // if(sample.isComplete){
                 ret.action = 'CONNECT ' + sample.id;
                 return ret;
-            }
+            // }
         }
         ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
         ret.state = SAMPLES;
@@ -333,6 +337,34 @@ function getNextRank(){
     return 1;
 }
 
+function getNextMolID(turn, sample){
+    let id = '';
+    let avail = turn.availability;
+    let storage = turn.me.storage;
+
+    if(avail.a > 0 && sample.costA > storage.a){
+        return 'A';
+    }
+
+    if(avail.b > 0 && sample.costB > storage.b){
+        return 'B';
+    }
+
+    if(avail.c > 0 && sample.costC > storage.c){
+        return 'C';
+    }
+
+    if(avail.d > 0 && sample.costD > storage.d){
+        return 'D';
+    }
+
+    if(avail.e > 0 && sample.costE > storage.e){
+        return 'A';
+    }
+
+    return null;
+}
+
 //////////////////////////////////////
 //////////////////////////////////////
 //// TURN INPUT GETTER FUNCTIONS: ////
@@ -347,16 +379,18 @@ function getTurnPlayers() {
         player.target = inputs[0];
         player.eta = parseInt(inputs[1]);
         player.score = parseInt(inputs[2]);
-        player.storageA = parseInt(inputs[3]);
-        player.storageB = parseInt(inputs[4]);
-        player.storageC = parseInt(inputs[5]);
-        player.storageD = parseInt(inputs[6]);
-        player.storageE = parseInt(inputs[7]);
-        player.expertiseA = parseInt(inputs[8]);
-        player.expertiseB = parseInt(inputs[9]);
-        player.expertiseC = parseInt(inputs[10]);
-        player.expertiseD = parseInt(inputs[11]);
-        player.expertiseE = parseInt(inputs[12]);
+        player.storage = {};
+        player.expertise = {};
+        player.storage.a = parseInt(inputs[3]);
+        player.storage.b = parseInt(inputs[4]);
+        player.storage.c = parseInt(inputs[5]);
+        player.storage.d = parseInt(inputs[6]);
+        player.storage.e = parseInt(inputs[7]);
+        player.expertise.a = parseInt(inputs[8]);
+        player.expertise.b = parseInt(inputs[9]);
+        player.expertise.c = parseInt(inputs[10]);
+        player.expertise.c = parseInt(inputs[11]);
+        player.expertise.e = parseInt(inputs[12]);
 
         if(i === 0) me = player;
         else op = player;
