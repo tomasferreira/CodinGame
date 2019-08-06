@@ -250,6 +250,10 @@ function getDiagTurn(turn) {
     } else {
         for(let i in turn.mySamples){
             let sample = turn.mySamples[i];
+
+            //we only want the samples and not the rest of the properties like isFull and size
+            if(typeof sample !== 'object') continue;
+
             if(sample.totalSampleCost <= 0){
                 ret.action = 'CONNECT ' + sample.id;
                 return ret;
@@ -276,13 +280,18 @@ function getMolTurn(turn) {
     } else {
         for(let i in turn.mySamples){
             let sample = turn.mySamples[i];
-            printErr(sample);
+
+            //we only want the samples and not the rest of the properties like isFull and size
+            if(typeof sample !== 'object') continue;
+
+            printErr('sample', sample);
+            printErr('avail', turn.availability);
             //GET ALL MOLS
             //CHANGE ISCOMPLETE
         }
-        ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
-        ret.state = LAB;
-        ret.movingCounter = MODULES.MOLECULES.LABORATORY;
+        // ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
+        // ret.state = LAB;
+        // ret.movingCounter = MODULES.MOLECULES.LABORATORY;
     }
     return ret;
 }
@@ -299,6 +308,10 @@ function getLabTurn(turn) {
     } else {
         for(let i in turn.mySamples){
             let sample = turn.mySamples[i];
+
+            //we only want the samples and not the rest of the properties like isFull and size
+            if(typeof sample !== 'object') continue;
+
             if(sample.isComplete){
                 ret.action = 'CONNECT ' + sample.id;
                 return ret;
