@@ -90,36 +90,36 @@
 // WAIT: do nothing.
 
 const MODULES = {
-    START_POS: {
-        SAMPLES: 2,
-        DIAGNOSIS: 2,
-        MOLECULES: 2,
-        LABORATORY: 2,
-    },
-    SAMPLES: {
-        DIAGNOSIS: 3,
-        MOLECULES: 3,
-        LABORATORY: 3,
-        ID: 'SAMPLES'
-    },
-    DIAGNOSIS: {
-        SAMPLES: 3,
-        MOLECULES: 3,
-        LABORATORY: 4,
-        ID: 'DIAGNOSIS'
-    },
-    MOLECULES: {
-        SAMPLES: 3,
-        DIAGNOSIS: 3,
-        LABORATORY: 3,
-        ID: 'MOLECULES'
-    },
-    LABORATORY: {
-        SAMPLES: 3,
-        DIAGNOSIS: 4,
-        MOLECULES: 3,
-        ID: 'LABORATORY'
-    }
+	START_POS: {
+		SAMPLES: 2,
+		DIAGNOSIS: 2,
+		MOLECULES: 2,
+		LABORATORY: 2,
+	},
+	SAMPLES: {
+		DIAGNOSIS: 3,
+		MOLECULES: 3,
+		LABORATORY: 3,
+		ID: 'SAMPLES'
+	},
+	DIAGNOSIS: {
+		SAMPLES: 3,
+		MOLECULES: 3,
+		LABORATORY: 4,
+		ID: 'DIAGNOSIS'
+	},
+	MOLECULES: {
+		SAMPLES: 3,
+		DIAGNOSIS: 3,
+		LABORATORY: 3,
+		ID: 'MOLECULES'
+	},
+	LABORATORY: {
+		SAMPLES: 3,
+		DIAGNOSIS: 4,
+		MOLECULES: 3,
+		ID: 'LABORATORY'
+	}
 };
 //STATES:
 const START = 'start';
@@ -132,13 +132,13 @@ const WAITING = 'waiting';
 const INITIAL_STATE = START;
 
 const FUNCTIONS = {
-    default: getDefaultTurn,
-    start: getStartTurn,
-    moving: getMovingTurn,
-    samples: getSamplesTurn,
-    diagnosis: getDiagTurn,
-    molecules: getMolTurn,
-    laboratory: getLabTurn,
+	default: getDefaultTurn,
+	start: getStartTurn,
+	moving: getMovingTurn,
+	samples: getSamplesTurn,
+	diagnosis: getDiagTurn,
+	molecules: getMolTurn,
+	laboratory: getLabTurn,
 };
 const IS_PLAYING = true;
 const MAX_MOL = 1;
@@ -147,51 +147,51 @@ const turns = [];
 getProjectData();
 let turnCounter = 0;
 while (IS_PLAYING) {
-    let turnData = {};
-    turnData.number = turnCounter;
-    let players = getTurnPlayers();
-    turnData.me = players.me;
-    turnData.op = players.op;
-    turnData.availability = getTurnAvailability();
-    let samples = getTurnSamples();
-    turnData.mySamples = samples.mySamples;
-    turnData.opSamples = samples.opSamples;
-    turnData.unCarriedSamples = samples.unCarriedSamples;
+	let turnData = {};
+	turnData.number = turnCounter;
+	let players = getTurnPlayers();
+	turnData.me = players.me;
+	turnData.op = players.op;
+	turnData.availability = getTurnAvailability();
+	let samples = getTurnSamples();
+	turnData.mySamples = samples.mySamples;
+	turnData.opSamples = samples.opSamples;
+	turnData.unCarriedSamples = samples.unCarriedSamples;
 
-    turnData.previousState = getPreviousState();
-    turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
-    turns.push(turnData);
+	turnData.previousState = getPreviousState();
+	turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
+	turns.push(turnData);
 
-    let turn = getTurn(turnData);
-    turnData.action = turn.action;
-    turnData.state = turn.state;
-    if (turn.movingCounter) turnData.movingCounter = + turn.movingCounter;
-    turnData.target = turn.target || '';
+	let turn = getTurn(turnData);
+	turnData.action = turn.action;
+	turnData.state = turn.state;
+	if (turn.movingCounter) turnData.movingCounter = + turn.movingCounter;
+	turnData.target = turn.target || '';
 
-    // printErr(turnData);
+	// printErr(turnData);
 
-    print(turnData.action);
-    turnCounter++;
+	print(turnData.action);
+	turnCounter++;
 }
 
 function getPreviousMovingCounter() {
-    if (turns.length === 0) return 0;
-    else return turns[turns.length - 1].movingCounter === 0 ? 0 : turns[turns.length - 1].movingCounter;
+	if (turns.length === 0) return 0;
+	else return turns[turns.length - 1].movingCounter === 0 ? 0 : turns[turns.length - 1].movingCounter;
 }
 
 function getPreviousState() {
-    if (turns.length === 0) return INITIAL_STATE;
-    else return turns[turns.length - 1].state;
+	if (turns.length === 0) return INITIAL_STATE;
+	else return turns[turns.length - 1].state;
 }
 
 function getTurn(turn) {
-    if (turn.movingCounter !== 0) {
-        return getMovingTurn(turn);
-    }
-    let state = turn.previousState;
-    let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
-    //printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
-    return stateFunction.call(this, turn);
+	if (turn.movingCounter !== 0) {
+		return getMovingTurn(turn);
+	}
+	let state = turn.previousState;
+	let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
+	//printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
+	return stateFunction.call(this, turn);
 }
 
 
@@ -201,131 +201,129 @@ function getTurn(turn) {
 ///////////////////////////////////////
 ///////////////////////////////////////
 function getDefaultTurn() {
-    let action = 'WAIT';
-    let state = WAITING;
-    return { action, state };
+	let action = 'WAIT';
+	let state = WAITING;
+	return { action, state };
 }
 
 function getStartTurn() {
-    let action = 'GOTO ' + MODULES.SAMPLES.ID;
-    let state = SAMPLES;
-    let movingCounter = MODULES.START_POS.SAMPLES;
-    return { action, state, movingCounter };
+	let action = 'GOTO ' + MODULES.SAMPLES.ID;
+	let state = SAMPLES;
+	let movingCounter = MODULES.START_POS.SAMPLES;
+	return { action, state, movingCounter };
 }
 
 function getMovingTurn(turn) {
-    let action = 'WAIT';
-    let state = turn.previousState;
-    return { action, state };
+	let action = 'WAIT';
+	let state = turn.previousState;
+	return { action, state };
 }
 
 function getSamplesTurn(turn) {
-    let ret = {};
-    ret.action = 'WAIT';
-    ret.state = SAMPLES;
-    if (turn.mySamples.size < MAX_MOL) {
-        let sampleRank = getNextRank();
-        ret.action = 'CONNECT ' + sampleRank;
-    } else {
-        ret.action = 'GOTO ' + MODULES.DIAGNOSIS.ID;
-        ret.state = DIAGNOSIS;
-        ret.movingCounter = MODULES.SAMPLES.DIAGNOSIS;
-    }
+	let ret = {};
+	ret.action = 'WAIT';
+	ret.state = SAMPLES;
+	if (turn.mySamples.size < MAX_MOL) {
+		let sampleRank = getNextRank();
+		ret.action = 'CONNECT ' + sampleRank;
+	} else {
+		ret.action = 'GOTO ' + MODULES.DIAGNOSIS.ID;
+		ret.state = DIAGNOSIS;
+		ret.movingCounter = MODULES.SAMPLES.DIAGNOSIS;
+	}
 
-    return ret;
+	return ret;
 }
 
 function getDiagTurn(turn) {
-    //diagnose all samples
-    //if all are diagnosed, move to mols
-    //if mysamp is empty, return to samples
-    let ret = {};
-    ret.action = 'WAIT';
-    ret.state = DIAGNOSIS;
+	//diagnose all samples
+	//if all are diagnosed, move to mols
+	//if mysamp is empty, return to samples
+	let ret = {};
+	ret.action = 'WAIT';
+	ret.state = DIAGNOSIS;
 
-    if(turn.mySamples.size < 1){
-        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-        ret.state = SAMPLES;
-        ret.movingCounter = MODULES.DIAGNOSIS.SAMPLES;
-    } else {
-        for(let i in turn.mySamples){
-            let sample = turn.mySamples[i];
+	if(turn.mySamples.size < 1){
+		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+		ret.state = SAMPLES;
+		ret.movingCounter = MODULES.DIAGNOSIS.SAMPLES;
+	} else {
+		for(let i in turn.mySamples){
+			let sample = turn.mySamples[i];
 
-            //we only want the samples and not the rest of the properties like isFull and size
-            if(typeof sample !== 'object') continue;
+			//we only want the samples and not the rest of the properties like isFull and size
+			if(typeof sample !== 'object') continue;
 
-            if(sample.totalSampleCost <= 0){
-                ret.action = 'CONNECT ' + sample.id;
-                return ret;
-            }
-        }
+			if(sample.totalSampleCost <= 0){
+				ret.action = 'CONNECT ' + sample.id;
+				return ret;
+			}
+		}
 
-        ret.action = 'GOTO ' + MODULES.MOLECULES.ID;
-        ret.state = MOLECULES;
-        ret.movingCounter = MODULES.DIAGNOSIS.MOLECULES;
-    }
+		ret.action = 'GOTO ' + MODULES.MOLECULES.ID;
+		ret.state = MOLECULES;
+		ret.movingCounter = MODULES.DIAGNOSIS.MOLECULES;
+	}
 
-    return ret;
+	return ret;
 }
 
 function getMolTurn(turn) {
-    let ret = {};
-    ret.action = 'WAIT';
-    ret.state = MOLECULES;
+	let ret = {};
+	ret.action = 'WAIT';
+	ret.state = MOLECULES;
 
-    if(turn.mySamples.size < 1){
-        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-        ret.state = SAMPLES;
-        ret.movingCounter = MODULES.MOLECULES.SAMPLES;
-    } else {
-        for(let i in turn.mySamples){
-            let sample = turn.mySamples[i];
+	if(turn.mySamples.size < 1){
+		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+		ret.state = SAMPLES;
+		ret.movingCounter = MODULES.MOLECULES.SAMPLES;
+	} else {
+		for(let i in turn.mySamples){
+			let sample = turn.mySamples[i];
 
-            //we only want the samples and not the rest of the properties like isFull and size
-            if(typeof sample !== 'object') continue;
+			//we only want the samples and not the rest of the properties like isFull and size
+			if(typeof sample !== 'object') continue;
 
-            printErr('sample', sample);
-            printErr('avail', turn.availability);
-            let molID = getNextMolID(turn, sample);
-            if(molID === null) continue;
-            ret.action = 'CONNECT ' + molID;
-            return ret;
-            //GET ALL MOLS
-            //CHANGE ISCOMPLETE
-        }
-        ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
-        ret.state = LAB;
-        ret.movingCounter = MODULES.MOLECULES.LABORATORY;
-    }
-    return ret;
+			let molID = getNextMolID(turn, sample);
+			if(molID === null) continue;
+			ret.action = 'CONNECT ' + molID;
+			return ret;
+			//GET ALL MOLS
+			//CHANGE ISCOMPLETE
+		}
+		ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
+		ret.state = LAB;
+		ret.movingCounter = MODULES.MOLECULES.LABORATORY;
+	}
+	return ret;
 }
 
 function getLabTurn(turn) {
-    let ret = {};
-    ret.action = 'WAIT';
-    ret.state = LAB;
+	let ret = {};
+	ret.action = 'WAIT';
+	ret.state = LAB;
 
-    if(turn.mySamples.size < 1){
-        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-        ret.state = SAMPLES;
-        ret.movingCounter = MODULES.LABORATORY.SAMPLES;
-    } else {
-        for(let i in turn.mySamples){
-            let sample = turn.mySamples[i];
+	if(turn.mySamples.size < 1){
+		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+		ret.state = SAMPLES;
+		ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+	} else {
+		for(let i in turn.mySamples){
+			let sample = turn.mySamples[i];
 
-            //we only want the samples and not the rest of the properties like isFull and size
-            if(typeof sample !== 'object') continue;
+			//we only want the samples and not the rest of the properties like isFull and size
+			if(typeof sample !== 'object') continue;
 
-            // if(sample.isComplete){
-                ret.action = 'CONNECT ' + sample.id;
-                return ret;
-            // }
-        }
-        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
-        ret.state = SAMPLES;
-        ret.movingCounter = MODULES.LABORATORY.SAMPLES;
-    }
-    return ret;
+			// if(sample.isComplete){
+			ret.action = 'CONNECT ' + sample.id;
+			return ret;
+			// }
+		}
+		ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+		ret.state = SAMPLES;
+		ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+	}
+	return ret;
 }
 
 ///////////////////////////
@@ -334,35 +332,38 @@ function getLabTurn(turn) {
 ///////////////////////////
 ///////////////////////////
 function getNextRank(){
-    return 1;
+	return 1;
 }
 
 function getNextMolID(turn, sample){
-    let id = '';
-    let avail = turn.availability;
-    let storage = turn.me.storage;
+	// let id = '';
+	let avail = turn.availability;
+	let storage = turn.me.storage;
 
-    if(avail.a > 0 && sample.costA > storage.a){
-        return 'A';
-    }
+	printErr('sample', sample);
+	printErr('avail', turn.availability);
 
-    if(avail.b > 0 && sample.costB > storage.b){
-        return 'B';
-    }
+	if(avail.a > 0 && sample.cost.a > storage.a){
+		return 'A';
+	}
 
-    if(avail.c > 0 && sample.costC > storage.c){
-        return 'C';
-    }
+	if(avail.b > 0 && sample.cost.b > storage.b){
+		return 'B';
+	}
 
-    if(avail.d > 0 && sample.costD > storage.d){
-        return 'D';
-    }
+	if(avail.c > 0 && sample.cost.c > storage.c){
+		return 'C';
+	}
 
-    if(avail.e > 0 && sample.costE > storage.e){
-        return 'A';
-    }
+	if(avail.d > 0 && sample.cost.d > storage.d){
+		return 'D';
+	}
 
-    return null;
+	if(avail.e > 0 && sample.cost.e > storage.e){
+		return 'A';
+	}
+
+	return null;
 }
 
 //////////////////////////////////////
@@ -371,82 +372,83 @@ function getNextMolID(turn, sample){
 //////////////////////////////////////
 //////////////////////////////////////
 function getTurnPlayers() {
-    let me;
-    let op;
-    for (let i = 0; i < 2; i++) {
-        let player = {};
-        let inputs = readline().split(' ');
-        player.target = inputs[0];
-        player.eta = parseInt(inputs[1]);
-        player.score = parseInt(inputs[2]);
-        player.storage = {};
-        player.expertise = {};
-        player.storage.a = parseInt(inputs[3]);
-        player.storage.b = parseInt(inputs[4]);
-        player.storage.c = parseInt(inputs[5]);
-        player.storage.d = parseInt(inputs[6]);
-        player.storage.e = parseInt(inputs[7]);
-        player.expertise.a = parseInt(inputs[8]);
-        player.expertise.b = parseInt(inputs[9]);
-        player.expertise.c = parseInt(inputs[10]);
-        player.expertise.c = parseInt(inputs[11]);
-        player.expertise.e = parseInt(inputs[12]);
+	let me;
+	let op;
+	for (let i = 0; i < 2; i++) {
+		let player = {};
+		let inputs = readline().split(' ');
+		player.target = inputs[0];
+		player.eta = parseInt(inputs[1]);
+		player.score = parseInt(inputs[2]);
+		player.storage = {};
+		player.expertise = {};
+		player.storage.a = parseInt(inputs[3]);
+		player.storage.b = parseInt(inputs[4]);
+		player.storage.c = parseInt(inputs[5]);
+		player.storage.d = parseInt(inputs[6]);
+		player.storage.e = parseInt(inputs[7]);
+		player.expertise.a = parseInt(inputs[8]);
+		player.expertise.b = parseInt(inputs[9]);
+		player.expertise.c = parseInt(inputs[10]);
+		player.expertise.c = parseInt(inputs[11]);
+		player.expertise.e = parseInt(inputs[12]);
 
-        if(i === 0) me = player;
-        else op = player;
-    }
+		if(i === 0) me = player;
+		else op = player;
+	}
 
-    return {me, op};
+	return {me, op};
 }
 
 function getTurnAvailability() {
-    let inputs = readline().split(' ');
-    let a = parseInt(inputs[0]);
-    let b = parseInt(inputs[1]);
-    let c = parseInt(inputs[2]);
-    let d = parseInt(inputs[3]);
-    let e = parseInt(inputs[4]);
+	let inputs = readline().split(' ');
+	let a = parseInt(inputs[0]);
+	let b = parseInt(inputs[1]);
+	let c = parseInt(inputs[2]);
+	let d = parseInt(inputs[3]);
+	let e = parseInt(inputs[4]);
 
-    return { a, b, c, d, e };
+	return { a, b, c, d, e };
 }
 
 function getTurnSamples() {
-    let sampleCount = parseInt(readline());
-    let mySamples = { size: 0, isFull: false };
-    let opSamples = { isEmpty: true };
-    let unCarriedSamples = { isEmpty: true };
-    for (let i = 0; i < sampleCount; i++) {
-        let sample = {};
-        sample.isComplete = false;
-        let inputs = readline().split(' ');
-        let id = parseInt(inputs[0]);
-        sample.id = id;
-        let carriedBy = parseInt(inputs[1]);
-        sample.rank = parseInt(inputs[2]);
-        sample.expertiseGain = inputs[3];
-        sample.health = parseInt(inputs[4]);
-        sample.costA = parseInt(inputs[5]);
-        sample.costB = parseInt(inputs[6]);
-        sample.costC = parseInt(inputs[7]);
-        sample.costD = parseInt(inputs[8]);
-        sample.costE = parseInt(inputs[9]);
-        sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
-        switch (carriedBy) {
-            case 0:
-                mySamples[id] = sample;
-                mySamples.size++;
-                break;
-            case 1:
-                opSamples[id] = sample;
-                opSamples.isEmpty = false;
-                break;
-            case 2:
-                unCarriedSamples[id] = sample;
-                unCarriedSamples.isEmpty = false;
-                break;
-        }
-    }
-    return { mySamples, opSamples, unCarriedSamples };
+	let sampleCount = parseInt(readline());
+	let mySamples = { size: 0, isFull: false };
+	let opSamples = { isEmpty: true };
+	let unCarriedSamples = { isEmpty: true };
+	for (let i = 0; i < sampleCount; i++) {
+		let sample = {};
+		sample.isComplete = false;
+		let inputs = readline().split(' ');
+		let id = parseInt(inputs[0]);
+		sample.id = id;
+		let carriedBy = parseInt(inputs[1]);
+		sample.rank = parseInt(inputs[2]);
+		sample.expertiseGain = inputs[3];
+		sample.health = parseInt(inputs[4]);
+		sample.cost = {};
+		sample.cost.a = parseInt(inputs[5]);
+		sample.cost.b = parseInt(inputs[6]);
+		sample.cost.c = parseInt(inputs[7]);
+		sample.cost.d = parseInt(inputs[8]);
+		sample.cost.e = parseInt(inputs[9]);
+		sample.cost.total = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
+		switch (carriedBy) {
+			case 0:
+				mySamples[id] = sample;
+				mySamples.size++;
+				break;
+			case 1:
+				opSamples[id] = sample;
+				opSamples.isEmpty = false;
+				break;
+			case 2:
+				unCarriedSamples[id] = sample;
+				unCarriedSamples.isEmpty = false;
+				break;
+		}
+	}
+	return { mySamples, opSamples, unCarriedSamples };
 }
 
 //////////////////////////////////////////
@@ -455,18 +457,18 @@ function getTurnSamples() {
 //////////////////////////////////////////
 //////////////////////////////////////////
 function getProjectData() {
-    let projects = [];
-    let projectCount = parseInt(readline());
-    for (var i = 0; i < projectCount; i++) {
-        let inputs = readline().split(' ');
-        let a = parseInt(inputs[0]);
-        let b = parseInt(inputs[1]);
-        let c = parseInt(inputs[2]);
-        let d = parseInt(inputs[3]);
-        let e = parseInt(inputs[4]);
-        projects.push({ a, b, c, d, e });
-    }
-    return projects;
+	let projects = [];
+	let projectCount = parseInt(readline());
+	for (var i = 0; i < projectCount; i++) {
+		let inputs = readline().split(' ');
+		let a = parseInt(inputs[0]);
+		let b = parseInt(inputs[1]);
+		let c = parseInt(inputs[2]);
+		let d = parseInt(inputs[3]);
+		let e = parseInt(inputs[4]);
+		projects.push({ a, b, c, d, e });
+	}
+	return projects;
 }
 
 /*
