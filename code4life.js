@@ -254,7 +254,7 @@ function getDiagTurn(turn) {
 			//we only want the samples and not the rest of the properties like isFull and size
 			if(typeof sample !== 'object') continue;
 
-			if(sample.totalSampleCost <= 0){
+			if(sample.cost.total <= 0){
 				ret.action = 'CONNECT ' + sample.id;
 				return ret;
 			}
@@ -341,7 +341,8 @@ function getNextMolID(turn, sample){
 	let storage = turn.me.storage;
 
 	printErr('sample', sample);
-	printErr('avail', turn.availability);
+	printErr('avail', avail);
+	printErr('storage', storage);
 
 	if(avail.a > 0 && sample.cost.a > storage.a){
 		return 'A';
@@ -360,7 +361,7 @@ function getNextMolID(turn, sample){
 	}
 
 	if(avail.e > 0 && sample.cost.e > storage.e){
-		return 'A';
+		return 'E';
 	}
 
 	return null;
@@ -432,7 +433,7 @@ function getTurnSamples() {
 		sample.cost.c = parseInt(inputs[7]);
 		sample.cost.d = parseInt(inputs[8]);
 		sample.cost.e = parseInt(inputs[9]);
-		sample.cost.total = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
+		sample.cost.total = sample.cost.a + sample.cost.b + sample.cost.c + sample.cost.d + sample.cost.e;
 		switch (carriedBy) {
 			case 0:
 				mySamples[id] = sample;
