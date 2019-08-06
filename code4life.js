@@ -161,6 +161,8 @@ while (IS_PLAYING) {
 
 	turnData.previousState = getPreviousState();
 	turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
+
+	setUpdatedSampleCost(players.me.expertise, samples.mySamples);
 	turns.push(turnData);
 
 	let turn = getTurn(turnData);
@@ -310,27 +312,28 @@ function getNextRank(){
 
 function getNextMolID(sample, avail, storage){
 
+	let cost = sample.updatedCost;
 	printErr('sample', sample);
 	printErr('avail', avail);
 	printErr('storage', storage);
 
-	if(avail.a > 0 && sample.cost.a > storage.a){
+	if(avail.a > 0 && cost.a > storage.a){
 		return 'A';
 	}
 
-	if(avail.b > 0 && sample.cost.b > storage.b){
+	if(avail.b > 0 && cost.b > storage.b){
 		return 'B';
 	}
 
-	if(avail.c > 0 && sample.cost.c > storage.c){
+	if(avail.c > 0 && cost.c > storage.c){
 		return 'C';
 	}
 
-	if(avail.d > 0 && sample.cost.d > storage.d){
+	if(avail.d > 0 && cost.d > storage.d){
 		return 'D';
 	}
 
-	if(avail.e > 0 && sample.cost.e > storage.e){
+	if(avail.e > 0 && cost.e > storage.e){
 		return 'E';
 	}
 
@@ -338,7 +341,7 @@ function getNextMolID(sample, avail, storage){
 }
 
 function isSampleComplete(sample, turn){
-	let cost = sample.cost;
+	let cost = sample.updatedCost;
 	let storage = turn.me.storage;
 	return storage.a >= cost.a && storage.b >= cost.b && storage.c >= cost.c && storage.d >= cost.d && storage.e >= cost.e;
 }
@@ -351,6 +354,20 @@ function goTo(start, target){
 	ret.movingCounter = MODULES[start][target];
 
 	return ret;
+}
+
+function setUpdatedSampleCost(expertise, samples){
+	for(let sample of samples){
+		if(sample.cost.total <= 0) continue;
+		let updatedCost = {};
+		updatedCost.a = Math.max(0, sample.cost.a - expertise.a);
+		updatedCost.b = Math.max(0, sample.cost.b - expertise.b);
+		updatedCost.c = Math.max(0, sample.cost.c - expertise.c);
+		updatedCost.d = Math.max(0, sample.cost.d - expertise.d);
+		updatedCost.e = Math.max(0, sample.cost.e - expertise.e);
+		updatedCost.total = updatedCost.a + updatedCost.b + updatedCost.c + updatedCost.d + updatedCost.e;
+		sample.updatedCost = updatedCost;
+	}
 }
 
 //////////////////////////////////////
@@ -377,7 +394,7 @@ function getTurnPlayers() {
 		player.expertise.a = parseInt(inputs[8]);
 		player.expertise.b = parseInt(inputs[9]);
 		player.expertise.c = parseInt(inputs[10]);
-		player.expertise.c = parseInt(inputs[11]);
+		player.expertise.d = parseInt(inputs[11]);
 		player.expertise.e = parseInt(inputs[12]);
 
 		if(i === 0) me = player;
