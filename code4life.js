@@ -90,131 +90,105 @@
 
 const MODULES = {
     START_POS: {
-        id: 'START_POS',
-        nextModule: 'SAMPLES',
-        previousModule: 'NULL',
-        distances: {
-            SAMPLES: 2,
-            DIAGNOSIS: 2,
-            MOLECULES: 2,
-            LABORATORY: 2
-        }
+        SAMPLES: 2,
+        DIAGNOSIS: 2,
+        MOLECULES: 2,
+        LABORATORY: 2,
     },
     SAMPLES: {
-        id: 'SAMPLES',
-        nextModule: 'DIAGNOSIS',
-        previousModule: 'LABORATORY',
-        distances: {
-            DIAGNOSIS: 3,
-            MOLECULES: 3,
-            LABORATORY: 3
-        }
+        DIAGNOSIS: 3,
+        MOLECULES: 3,
+        LABORATORY: 3,
+        ID: 'SAMPLES'
     },
     DIAGNOSIS: {
-        id: 'DIAGNOSIS',
-        nextModule: 'MOLECULES',
-        previousModule: 'SAMPLES',
-        distances: {
-            SAMPLES: 3,
-            MOLECULES: 3,
-            LABORATORY: 4
-        }
+        SAMPLES: 3,
+        MOLECULES: 3,
+        LABORATORY: 4,
+        ID: 'DIAGNOSIS'
     },
     MOLECULES: {
-        id: 'MOLECULES',
-        nextModule: 'LABORATORY',
-        previousModule: 'DIAGNOSIS',
-        distances: {
-            SAMPLES: 3,
-            DIAGNOSIS: 3,
-            LABORATORY: 3
-        }
+        SAMPLES: 3,
+        DIAGNOSIS: 3,
+        LABORATORY: 3,
+        ID: 'MOLECULES'
     },
     LABORATORY: {
-        id: 'LABORATORY',
-        nextModule: 'SAMPLES',
-        previousModule: 'MOLECULES',
-        distances: {
-            SAMPLES: 3,
-            DIAGNOSIS: 4,
-            MOLECULES: 3,
-        }
+        SAMPLES: 3,
+        DIAGNOSIS: 4,
+        MOLECULES: 3,
+        ID: 'LABORATORY'
     }
 };
+//STATES:
+const START = 'start';
+const MOVING = 'moving';
+const SAMPLES = 'samples';
+const DIAGNOSIS = 'diagnosis';
+const MOLECULES = 'molecules';
+const LAB = 'laboratory';
+const WAITING = 'waiting';
 
-const STATES = {
-    default: {
-        func: getDefaultTurn,
-        id: 'default'
-    },
-    start: {
-        func: getStartTurn,
-        id: 'start'
-    },
-    moving: {
-        func: getMovingTurn,
-        id: 'moving'
-    },
-    sample: {
-        func: getSamplesTurn,
-        id: 'sample'
-    },
-    diagnosis: {
-        func: getDiagTurn,
-        id: 'diagnosis'
-    },
-    molecules: {
-        func: getMolTurn,
-        id: 'molecules'
-    },
-    laboratory: {
-        func: getLabTurn,
-        id: 'laboratory'
-    }
+const INITIAL_STATE = START;
+
+const FUNCTIONS = {
+    default: getDefaultTurn,
+    start: getStartTurn,
+    moving: getMovingTurn,
+    samples: getSamplesTurn,
+    diagnosis: getDiagTurn,
+    molecules: getMolTurn,
+    laboratory: getLabTurn,
 };
-const INITIAL_STATE = STATES['start'].id;
-
+const IS_PLAYING = true;
+const MAX_MOL = 1;
 const turns = [];
 
 getProjectData();
-
-while (true) {
+let turnCounter = 0;
+while (IS_PLAYING) {
     let turnData = {};
+    turnData.number = turnCounter;
     turnData.players = getTurnPlayers();
     turnData.availability = getTurnAvailability();
-    turnData.samples = getTurnSamples();
+    let samples = getTurnSamples();
+    turnData.mySamples = samples.mySamples;
+    turnData.opSamples = samples.opSamples;
+    turnData.unCarriedSamples = samples.unCarriedSamples;
+
     turnData.previousState = getPreviousState();
     turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
     turns.push(turnData);
 
     let turn = getTurn(turnData);
     turnData.action = turn.action;
-    turnData.state  = turn.state;
-    if(turn.movingCounter) turnData.movingCounter =+ turn.movingCounter;
+    turnData.state = turn.state;
+    if (turn.movingCounter) turnData.movingCounter = + turn.movingCounter;
     turnData.target = turn.target || '';
 
-    printErr(turnData);
+    // printErr(turnData);
 
     print(turnData.action);
+    turnCounter++;
 }
 
-function getPreviousMovingCounter(){
-    if(turns.length === 0) return 0;
+function getPreviousMovingCounter() {
+    if (turns.length === 0) return 0;
     else return turns[turns.length - 1].movingCounter === 0 ? 0 : turns[turns.length - 1].movingCounter;
 }
 
-function getPreviousState(){
-    if(turns.length === 0) return INITIAL_STATE;
+function getPreviousState() {
+    if (turns.length === 0) return INITIAL_STATE;
     else return turns[turns.length - 1].state;
 }
 
 function getTurn(turn) {
-    if(turn.movingCounter !== 0){
+    if (turn.movingCounter !== 0) {
         return getMovingTurn(turn);
     }
-
     let state = turn.previousState;
-    let stateFunction = STATES[state] && STATES[state].func ? STATES[state].func : STATES['default'].func;
+    let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
+    //printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
     return stateFunction.call(this, turn);
 }
 
@@ -224,53 +198,86 @@ function getTurn(turn) {
 //// STATE-BASED ACTION FUNCTIONS: ////
 ///////////////////////////////////////
 ///////////////////////////////////////
-function getDefaultTurn(turn){
+function getDefaultTurn() {
     let action = 'WAIT';
-    let state = 'waiting';
-    return {action, state};
+    let state = WAITING;
+    return { action, state };
 }
 
-function getStartTurn(turn){
-    let action = 'GOTO SAMPLES';
-    let state = 'samples';
-    let movingCounter = MODULES.START_POS.distances.SAMPLES;
-    return {action, state, movingCounter};
+function getStartTurn() {
+    let action = 'GOTO ' + MODULES.SAMPLES.ID;
+    let state = SAMPLES;
+    let movingCounter = MODULES.START_POS.SAMPLES;
+    return { action, state, movingCounter };
 }
 
-function getMovingTurn(turn){
+function getMovingTurn(turn) {
     let action = 'WAIT';
     let state = turn.previousState;
-    return {action, state};
+    return { action, state };
 }
 
-function getSamplesTurn(turn){
-    printErr('SAMPLES ACTION');
-    let action = '';
-    let state = '';
-    return {action, state};
+function getSamplesTurn(turn) {
+    let ret = {};
+    ret.action = 'WAIT';
+    ret.state = SAMPLES;
+    if (turn.mySamples.size < MAX_MOL) {
+        let sampleRank = getNextRank();
+        ret.action = 'CONNECT ' + sampleRank;
+    } else {
+        ret.action = 'GOTO ' + MODULES.DIAGNOSIS.ID;
+        ret.state = DIAGNOSIS;
+        ret.movingCounter = MODULES.SAMPLES.DIAGNOSIS;
+    }
+
+    return ret;
 }
 
-function getDiagTurn(turn){
-    printErr('DIAG ACTION');
-    let action = '';
-    let state = '';
-    return {action, state};
+function getDiagTurn(turn) {
+    //diagnose all samples
+    //if all are diagnosed, move to mols
+    //if mysamp is empty, return to samples
+    let ret = {};
+    ret.action = '';
+    ret.state = '';
+
+    if(turn.mySamples.size < 1){
+        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+        ret.state = SAMPLES;
+        ret.movingCounter = MODULES.DIAGNOSIS.SAMPLES;
+    } else {
+        for(let i in turn.mySamples){
+            let sample = turn.mySamples[i];
+            // printErr(sample);
+            //SAMPLE IS SOMEHOW THE WHOLE ARRAY!!! PLEASE FIXX
+        }
+    }
+
+    return ret;
 }
 
-function getMolTurn(turn){
+function getMolTurn() {
     printErr('MOL ACTION');
     let action = '';
     let state = '';
-    return {action, state};
+    return { action, state };
 }
 
-function getLabTurn(turn){
+function getLabTurn() {
     printErr('LAB ACTION');
     let action = '';
     let state = '';
-    return {action, state};
+    return { action, state };
 }
 
+///////////////////////////
+///////////////////////////
+//// HELPER FUNCTIONS: ////
+///////////////////////////
+///////////////////////////
+function getNextRank(){
+    return 1;
+}
 
 //////////////////////////////////////
 //////////////////////////////////////
@@ -311,18 +318,20 @@ function getTurnAvailability() {
     let d = parseInt(inputs[3]);
     let e = parseInt(inputs[4]);
 
-    return {a, b, c, d, e};
+    return { a, b, c, d, e };
 }
 
 function getTurnSamples() {
     let sampleCount = parseInt(readline());
-    let samples = {};
+    let mySamples = { size: 0, isFull: false };
+    let opSamples = { isEmpty: true };
+    let unCarriedSamples = { isEmpty: true };
     for (let i = 0; i < sampleCount; i++) {
         let sample = {};
         let inputs = readline().split(' ');
         let id = parseInt(inputs[0]);
         sample.id = id;
-        sample.carriedBy = parseInt(inputs[1]);
+        let carriedBy = parseInt(inputs[1]);
         sample.rank = parseInt(inputs[2]);
         sample.expertiseGain = inputs[3];
         sample.health = parseInt(inputs[4]);
@@ -332,9 +341,22 @@ function getTurnSamples() {
         sample.costD = parseInt(inputs[8]);
         sample.costE = parseInt(inputs[9]);
         sample.totalSampleCost = sample.costA + sample.costB + sample.costC + sample.costD + sample.costE;
-        samples[id] = sample;
+        switch (carriedBy) {
+            case 0:
+                mySamples[id] = sample;
+                mySamples.size++;
+                break;
+            case 1:
+                opSamples[id] = sample;
+                opSamples.isEmpty = false;
+                break;
+            case 2:
+                unCarriedSamples[id] = sample;
+                unCarriedSamples.isEmpty = false;
+                break;
+        }
     }
-    return samples;
+    return { mySamples, opSamples, unCarriedSamples };
 }
 
 //////////////////////////////////////////
@@ -352,7 +374,7 @@ function getProjectData() {
         let c = parseInt(inputs[2]);
         let d = parseInt(inputs[3]);
         let e = parseInt(inputs[4]);
-        projects.push({a, b, c, d, e});
+        projects.push({ a, b, c, d, e });
     }
     return projects;
 }
@@ -382,10 +404,6 @@ function fillState() {
             }
         }
     });
-}
-
-function getSample() {
-    print('CONNECT ' + sampleRank);
 }
 
 function checkSamples() {
@@ -522,20 +540,6 @@ function connectSamples(valueCheck) {
     printErr('all connected');
     allConnected = true;
 }
-
-function next(target) {
-    if (typeof target == 'undefined') {
-        print('GOTO ' + MODULES[mod].nextModule);
-        mod = MODULES[mod].nextModule;
-    } else {
-        print('GOTO ' + target);
-        mod = target;
-    }
-    isMoving = true;
-}
-
-
-
 
 */
 
