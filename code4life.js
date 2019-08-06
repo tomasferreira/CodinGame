@@ -37,9 +37,9 @@
 // The laboratory module:
 // To use this module, the player's robot must be carrying a sample data file as well as the required amount of molecules for producing that sample's medicine.
 // Connecting to this module with CONNECT id where id is the identifier of a sample data the player can research, will have several effects:
-// The sample data id as well as the associated molecules are removed from play.
-// The players scores as many points as the sample's health points.
-// The player acquires molecule expertise: the robot will need 1 less molecule of the type specified by the sample for producing all subsequent medicines.
+// - The sample data id as well as the associated molecules are removed from play.
+// - The players scores as many points as the sample's health points.
+// - The player acquires molecule expertise: the robot will need 1 less molecule of the type specified by the sample for producing all subsequent medicines.
 
 // Concurrency:
 // In the event that both players try to take sample data from the cloud on the same turn, only the player who had previously diagnosed this sample will successfully complete the transfer.
@@ -71,6 +71,7 @@
 // score: the player's number of health points
 // storageA, storageB, storageC, storageD, storageE: number of molecules held by the player for each molecule type.
 // expertiseA, expertiseB, expertiseC, expertiseD, expertiseE: the molecule expertise for each molecule type.
+
 // Next line:availableA, availableB, availableC, availableD, availableE: 5 integers, the number of available molecules for each type.
 
 // Next line:sampleCount: the number of samples currently in the game.
@@ -122,7 +123,6 @@ const MODULES = {
 };
 //STATES:
 const START = 'start';
-const MOVING = 'moving';
 const SAMPLES = 'samples';
 const DIAGNOSIS = 'diagnosis';
 const MOLECULES = 'molecules';
@@ -149,7 +149,9 @@ let turnCounter = 0;
 while (IS_PLAYING) {
     let turnData = {};
     turnData.number = turnCounter;
-    turnData.players = getTurnPlayers();
+    let players = getTurnPlayers();
+    turnData.me = players.me;
+    turnData.op = players.op;
     turnData.availability = getTurnAvailability();
     let samples = getTurnSamples();
     turnData.mySamples = samples.mySamples;
@@ -256,24 +258,57 @@ function getDiagTurn(turn) {
 
         ret.action = 'GOTO ' + MODULES.MOLECULES.ID;
         ret.state = MOLECULES;
-        ret.movingCounter = MODULES.DIAGNOSIS.LABORATORY;
+        ret.movingCounter = MODULES.DIAGNOSIS.MOLECULES;
     }
 
     return ret;
 }
 
-function getMolTurn() {
-    printErr('MOL ACTION');
-    let action = '';
-    let state = '';
-    return { action, state };
+function getMolTurn(turn) {
+    let ret = {};
+    ret.action = 'WAIT';
+    ret.state = MOLECULES;
+
+    if(turn.mySamples.size < 1){
+        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+        ret.state = SAMPLES;
+        ret.movingCounter = MODULES.MOLECULES.SAMPLES;
+    } else {
+        for(let i in turn.mySamples){
+            let sample = turn.mySamples[i];
+            printErr(sample);
+            //GET ALL MOLS
+            //CHANGE ISCOMPLETE
+        }
+        ret.action = 'GOTO ' + MODULES.LABORATORY.ID;
+        ret.state = LAB;
+        ret.movingCounter = MODULES.MOLECULES.LABORATORY;
+    }
+    return ret;
 }
 
-function getLabTurn() {
-    printErr('LAB ACTION');
-    let action = '';
-    let state = '';
-    return { action, state };
+function getLabTurn(turn) {
+    let ret = {};
+    ret.action = 'WAIT';
+    ret.state = LAB;
+
+    if(turn.mySamples.size < 1){
+        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+        ret.state = SAMPLES;
+        ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+    } else {
+        for(let i in turn.mySamples){
+            let sample = turn.mySamples[i];
+            if(sample.isComplete){
+                ret.action = 'CONNECT ' + sample.id;
+                return ret;
+            }
+        }
+        ret.action = 'GOTO ' + MODULES.SAMPLES.ID;
+        ret.state = SAMPLES;
+        ret.movingCounter = MODULES.LABORATORY.SAMPLES;
+    }
+    return ret;
 }
 
 ///////////////////////////
@@ -291,10 +326,10 @@ function getNextRank(){
 //////////////////////////////////////
 //////////////////////////////////////
 function getTurnPlayers() {
-    let players = [];
+    let me;
+    let op;
     for (let i = 0; i < 2; i++) {
         let player = {};
-        player.id = i;
         let inputs = readline().split(' ');
         player.target = inputs[0];
         player.eta = parseInt(inputs[1]);
@@ -310,10 +345,11 @@ function getTurnPlayers() {
         player.expertiseD = parseInt(inputs[11]);
         player.expertiseE = parseInt(inputs[12]);
 
-        players.push(player);
+        if(i === 0) me = player;
+        else op = player;
     }
 
-    return players;
+    return {me, op};
 }
 
 function getTurnAvailability() {
@@ -334,6 +370,7 @@ function getTurnSamples() {
     let unCarriedSamples = { isEmpty: true };
     for (let i = 0; i < sampleCount; i++) {
         let sample = {};
+        sample.isComplete = false;
         let inputs = readline().split(' ');
         let id = parseInt(inputs[0]);
         sample.id = id;
