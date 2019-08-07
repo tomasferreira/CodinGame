@@ -161,7 +161,8 @@ const LEVEL_THREE_TURN = 100;
 
 const turns = [];
 
-getProjectData();
+const PROJECTS = getProjectData();
+printErr('PROJ', PROJECTS);
 let turnCounter = 0;
 while (IS_PLAYING) {
 	let turn = {};
