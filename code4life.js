@@ -184,7 +184,6 @@ while (IS_PLAYING) {
 	printErr('player', players.me);
 	printErr('avail', turn.availability);
 	let action = getAction(turn);
-	printErr('ACTION', action);
 	turn.action = action.action;
 	turn.state = action.state;
 	if (action.movingCounter) turn.movingCounter = + action.movingCounter;
@@ -206,11 +205,8 @@ function getAction(turn) {
 	}
 	let state = turn.previousState;
 	let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
-	printErr('FUNC', stateFunction);
 	//printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
-	let a = stateFunction.call(this, turn);
-	printErr('RES', a);
-	return a;
+	return stateFunction.call(this, turn);
 }
 
 function getDefaultTurn() {
@@ -485,7 +481,6 @@ function goTo(start, target) {
 	ret.action = 'GOTO ' + MODULES[target].ID;
 	ret.state = target;
 	ret.movingCounter = MODULES[start][target];
-	printErr('GOTO RET', ret);
 	return ret;
 }
 
