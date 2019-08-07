@@ -140,49 +140,57 @@ const FUNCTIONS = {
 };
 
 const IS_PLAYING = true;
-const SAMPLE_NUM = 3;
 const LEVEL_ONE_EXPERTISE = 0;
 const LEVEL_TWO_EXPERTISE = 3;
 const LEVEL_THREE_EXPERTISE = 6;
 const LEVEL_ONE_RANK = 1;
 const LEVEL_TWO_RANK = 2;
 const LEVEL_THREE_RANK = 3;
+const ONE_SAMPLE_TURN = 175;
+const TWO_SAMPLES_TURN = 150;
+
+const LEVEL_TWO_TURN = 45;
+const LEVEL_THREE_TURN = 100;
 
 const turns = [];
 
 getProjectData();
 let turnCounter = 0;
-let level = 0;
 while (IS_PLAYING) {
-	let turnData = {};
-	turnData.number = turnCounter;
+	let turn = {};
+	turn.number = turnCounter;
+
 	let players = getTurnPlayers();
-	turnData.me = players.me;
-	turnData.op = players.op;
-	turnData.availability = getTurnAvailability();
+	turn.me = players.me;
+	turn.op = players.op;
+
+	turn.availability = getTurnAvailability();
+
 	let samples = getTurnSamples();
-	turnData.mySamples = samples.mySamples;
-	turnData.opSamples = samples.opSamples;
-	turnData.unCarriedSamples = samples.unCarriedSamples;
+	turn.mySamples = samples.mySamples;
+	turn.opSamples = samples.opSamples;
+	turn.unCarriedSamples = samples.unCarriedSamples;
 
-	turnData.previousState = getPreviousState();
-	turnData.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
-	turnData.level = getLevel(turnData);
+	turn.previousState = getPreviousState(turns);
+	turn.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
+	turn.level = getLevel(turn);
+	turn.maxSaples = getMaxSamplesNum(turn);
 	setUpdatedSampleCost(players.me.expertise, samples.mySamples);
-	setSamplesData(turnData);
-	turns.push(turnData);
+	setSamplesData(turn);
+	turns.push(turn);
 
-	printErr('turn', turnCounter, '|| level', level);
+	printErr('turn', turn.number, '|| level', turn.level, '|| max', turn.maxSaples, ' || prevState', turn.previousState);
 	printErr('samples', samples.mySamples);
 	printErr('player', players.me);
-	printErr('avail', turnData.availability);
-	let turn = getTurn(turnData);
-	turnData.action = turn.action;
-	turnData.state = turn.state;
-	if (turn.movingCounter) turnData.movingCounter = + turn.movingCounter;
-	turnData.target = turn.target || '';
+	printErr('avail', turn.availability);
+	let action = getAction(turn);
+	printErr('ACTION', action);
+	turn.action = action.action;
+	turn.state = action.state;
+	if (action.movingCounter) turn.movingCounter = + action.movingCounter;
+	turn.target = action.target || '';
 
-	print(turnData.action);
+	print(turn.action);
 	turnCounter++;
 }
 
@@ -192,6 +200,19 @@ while (IS_PLAYING) {
 //// STATE-BASED ACTION FUNCTIONS: ////
 ///////////////////////////////////////
 ///////////////////////////////////////
+function getAction(turn) {
+	if (turn.movingCounter !== 0) {
+		return getMovingTurn(turn);
+	}
+	let state = turn.previousState;
+	let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
+	printErr('FUNC', stateFunction);
+	//printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
+	let a = stateFunction.call(this, turn);
+	printErr('RES', a);
+	return a;
+}
+
 function getDefaultTurn() {
 	printErr('DEFAULT');
 	let action = 'WAIT';
@@ -200,6 +221,7 @@ function getDefaultTurn() {
 }
 
 function getStartTurn() {
+	printErr('START');
 	return goTo(START_POS, SAMPLES);
 }
 
@@ -214,8 +236,8 @@ function getSamplesTurn(turn) {
 	ret.action = 'WAIT';
 	ret.state = SAMPLES;
 	let samples = turn.mySamples;
-	if (samples.length < SAMPLE_NUM || turn.validCount < SAMPLE_NUM && turn.totalDiagnosed > SAMPLE_NUM) {
-		// if ((validSamples(turn) < SAMPLE_NUM && samples.totalDiagnosed >= SAMPLE_NUM) || samples.totalDiagnosed < SAMPLE_NUM) {
+	let max = turn.maxSaples;
+	if (samples.length < max) {
 		let sampleRank = getNextRank(turn);
 		ret.action = 'CONNECT ' + sampleRank;
 		return ret;
@@ -230,17 +252,30 @@ function getDiagTurn(turn) {
 	ret.state = DIAGNOSIS;
 
 	let samples = turn.mySamples;
+	let max = turn.maxSaples;
 
-	if (samples.size < 1) {
-		return goTo(DIAGNOSIS, SAMPLES);
-	} else {
+	if (samples.length < 1) {
+		return goTo(MOLECULES, SAMPLES);
+	}
+
+	if (turn.diagnosedCount !== samples.length) {
+
 		for (let sample of samples) {
-			if (sample.cost.total < 0) {
+			if (!sample.isDiagnosed) {
 				ret.action = 'CONNECT ' + sample.id;
 				return ret;
 			}
 		}
-		if (turn.validCount < SAMPLE_NUM && samples.length < SAMPLE_NUM) return goTo(DIAGNOSIS, SAMPLES);
+	} else if (turn.validCount < max) {
+
+		let unValid = samples.filter(sample => (!sample.isValid || !sample.isPossible) && sample.isDiagnosed);
+		for (let sample of unValid) {
+			ret.action = 'CONNECT ' + sample.id;
+			return ret;
+		}
+		return goTo(DIAGNOSIS, SAMPLES);
+
+	} else {
 		return goTo(DIAGNOSIS, MOLECULES);
 	}
 }
@@ -252,30 +287,32 @@ function getMolTurn(turn) {
 
 	let samples = turn.mySamples;
 
-	if (turn.mySamples.size < 1) {
+	if (samples.length < 1) {
 		return goTo(MOLECULES, SAMPLES);
-	} else {
-		for (let sample of samples) {
+	}
 
-			if (isSampleComplete(sample, turn)) {
-				return goTo(MOLECULES, LABORATORY);
-			} else if (sample.isValid) {
-				let avail = turn.availability;
-				let storage = turn.me.storage;
+	samples.sort((sampleA, sampleB) => sampleA - sampleB);
 
-				let molID = getNextMolID(sample, avail, storage);
+	for (let sample of samples) {
 
-				//if we can't find mol for this sample, wait one turn
-				if (molID === null) {
-					printErr('NULL');
-					return ret;
-				}
-				ret.action = 'CONNECT ' + molID;
-			} else if (samples.length < SAMPLE_NUM) {
-				goTo(MOLECULES, SAMPLES);
+		if (isSampleComplete(sample, turn)) {
+			return goTo(MOLECULES, LABORATORY);
+		} else if (sample.isValid) {
+			let avail = turn.availability;
+			let storage = turn.me.storage;
+
+			let molID = getNextMolID(sample, avail, storage);
+
+			//if we can't find mol for this sample, wait one turn
+			if (molID === null) {
+				printErr('NULL');
+				return ret;
 			}
-			return ret;
+			ret.action = 'CONNECT ' + molID;
+		} else if (samples.length < getMaxSamplesNum(turn)) {
+			goTo(MOLECULES, SAMPLES);
 		}
+		return ret;
 	}
 }
 
@@ -303,6 +340,12 @@ function getLabTurn(turn) {
 //// HELPER FUNCTIONS: ////
 ///////////////////////////
 ///////////////////////////
+function getMaxSamplesNum(turn) {
+	if (turn.number >= ONE_SAMPLE_TURN) return 1;
+	if (turn.number >= TWO_SAMPLES_TURN) return 2;
+	return 3;
+}
+
 function setSamplesData(turn) {
 	//checks:
 	//expertise gain won't make it bigger than 5
@@ -319,10 +362,13 @@ function setSamplesData(turn) {
 
 		diagnosedCount++;
 		let isValid = true;
-		let isPossible = false;
+		let isPossible = true;
 		let cost = sample.updatedCost;
 		// let health = sample.health;
 		let gain = sample.expertiseGain;
+		let totalCost = sample.updatedCost.total;
+
+		if (totalCost > 10) isValid = false;
 
 		switch (gain) {
 			case 'A':
@@ -364,8 +410,8 @@ function setSamplesData(turn) {
 		}
 		sample.isPossible = isPossible;
 		sample.isValid = isValid;
-		if(isValid) validCount++;
-		if(isPossible) possibleCount++;
+		if (isValid) validCount++;
+		if (isPossible) possibleCount++;
 	});
 	turn.possibleCount = possibleCount;
 	turn.validCount = validCount;
@@ -377,19 +423,9 @@ function getPreviousMovingCounter() {
 	else return turns[turns.length - 1].movingCounter === 0 ? 0 : turns[turns.length - 1].movingCounter;
 }
 
-function getPreviousState() {
+function getPreviousState(turns) {
 	if (turns.length === 0) return START_POS;
 	else return turns[turns.length - 1].state;
-}
-
-function getTurn(turn) {
-	if (turn.movingCounter !== 0) {
-		return getMovingTurn(turn);
-	}
-	let state = turn.previousState;
-	let stateFunction = FUNCTIONS[state] || FUNCTIONS['default'];
-	//printErr('turn start', turn.number, 'state', state, 'func', stateFunction);
-	return stateFunction.call(this, turn);
 }
 
 function getNextRank(turn) {
@@ -400,9 +436,14 @@ function getNextRank(turn) {
 }
 
 function getLevel(turn) {
-	if (turn.me.expertise.total >= LEVEL_THREE_EXPERTISE) return 3;
-	if (turn.me.expertise.total >= LEVEL_TWO_EXPERTISE) return 2;
-	if (turn.me.expertise.total >= LEVEL_ONE_EXPERTISE) return 1;
+	// if (turn.me.expertise.total >= LEVEL_THREE_EXPERTISE) return 3;
+	// if (turn.me.expertise.total >= LEVEL_TWO_EXPERTISE) return 2;
+	// if (turn.me.expertise.total >= LEVEL_ONE_EXPERTISE) return 1;
+
+	let turnCounter = turn.number;
+	if (turnCounter >= LEVEL_THREE_TURN) return 3;
+	if (turnCounter >= LEVEL_TWO_TURN) return 2;
+	return 1;
 }
 
 function getNextMolID(sample, avail, storage) {
@@ -444,7 +485,7 @@ function goTo(start, target) {
 	ret.action = 'GOTO ' + MODULES[target].ID;
 	ret.state = target;
 	ret.movingCounter = MODULES[start][target];
-
+	printErr('GOTO RET', ret);
 	return ret;
 }
 
