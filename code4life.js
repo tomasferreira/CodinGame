@@ -89,6 +89,13 @@
 // CONNECT id/type/ rank: connect to the target module with the specified sample id or retrieve a sample of a given rank at the SAMPLES module, or molecule of the given type at the MOLECULES module.
 // WAIT: do nothing.
 
+const DEBUG = false;
+if (!DEBUG) {
+	printErr = function () {
+		return;
+	};
+}
+
 const MODULES = {
 	START_POS: {
 		SAMPLES: 2,
