@@ -62,25 +62,30 @@ const IS_PLAYING = true;
 const LEVEL_ONE_RANK = 1;
 const LEVEL_TWO_RANK = 2;
 const LEVEL_THREE_RANK = 3;
-const ONE_SAMPLE_TURN = 175;
-const TWO_SAMPLES_TURN = 150;
+
+const PANIC_LEVEL_ONE_TURN = 175;
+const PANIC_LEVEL_TWO_TURN = 150;
 
 const LEVEL_TWO_TURN = 45;
-const LEVEL_THREE_TURN = 100;
+const LEVEL_THREE_TURN = 1250;
 
-const PROJECT_TYPE = 9;
+const MIN_HEALTH_RANK_ONE = 9;
+const MIN_HEALTH_RANK_TWO = 19;
+const MIN_HEALTH_RANK_THREE = 39;
 
-const turns = [];
+//minpos = paniclevel - posstrat
+// const PROJECT_TYPE = 9;
+const PROJ_MIN = 1;
+const VALUE_STRATEGY = 1;
+const POSSIBLE_STRATEGY = 1;
 
-const PROJECTS = getProjectData();
-setProject();
-printErr('PROJ', PROJECTS);
-
+let projects = getProjectData();
+let turns = [];
 let turnCounter = 0;
 while (IS_PLAYING) {
 	let turn = {};
 	turn.number = turnCounter;
-
+	turn.projects = projects;
 	let players = getTurnPlayers();
 	turn.me = players.me;
 	turn.op = players.op;
@@ -95,15 +100,22 @@ while (IS_PLAYING) {
 	turn.previousState = getPreviousState(turns);
 	turn.movingCounter = Math.max(0, getPreviousMovingCounter() - 1);
 	turn.level = getLevel(turn);
-	turn.maxSaples = getMaxSamplesNum(turn);
+	turn.panicLevel = getPanicLevel(turn);
+	turn.maxSamples = getMaxSamplesNum(turn);
+	turn.sampleRank = getSampleRank(turn);
+	turn.minValuable = getMinValuableSampleNum(turn);
+	turn.minPossible = getMinPossibleSampleNum(turn);
 	setUpdatedSampleCost(players.me.expertise, samples.mySamples);
 	setSamplesData(turn);
+	updateProjectData(turn);
+
 	turns.push(turn);
 
-	printErr('turn', turn.number, '|| level', turn.level, '|| max', turn.maxSaples, ' || prevState', turn.previousState);
+	printErr('turn', turn.number, '|| level', turn.level, '|| max', turn.maxSamples, ' || prevState', turn.previousState);
 	printErr('samples', samples.mySamples);
 	printErr('player', players.me);
 	printErr('avail', turn.availability);
+	printErr('proj', turn.projects);
 	let action = getAction(turn);
 	turn.action = action.action;
 	turn.state = action.state;
@@ -153,9 +165,9 @@ function getSamplesTurn(turn) {
 	ret.action = 'WAIT';
 	ret.state = SAMPLES;
 	let samples = turn.mySamples;
-	let max = turn.maxSaples;
-	if (samples.length < max) {
-		let sampleRank = getNextRank(turn);
+	let maxSamples = turn.maxSamples;
+	let sampleRank = turn.sampleRank;
+	if (samples.length < maxSamples) {
 		ret.action = 'CONNECT ' + sampleRank;
 		return ret;
 	} else {
@@ -168,30 +180,56 @@ function getDiagTurn(turn) {
 	ret.action = 'WAIT';
 	ret.state = DIAGNOSIS;
 
-	let samples = turn.mySamples;
-	let max = turn.maxSaples;
+	let mySamples = turn.mySamples;
+	let maxSamples = turn.maxSamples;
+	let unFinishedProject = projects.filter(project => !project.isFinished).pop();
+	// printErr('PROJJJJ', unFinishedProject);
 
-	if (samples.length < 1) {
+	if (mySamples.length < 1) {
 		return goTo(MOLECULES, SAMPLES);
 	}
 
-	if (turn.diagnosedCount !== samples.length) {
+	if (turn.diagnosedCount !== mySamples.length) {
 
-		for (let sample of samples) {
+		printErr('1');
+		for (let sample of mySamples) {
 			if (!sample.isDiagnosed) {
 				ret.action = 'CONNECT ' + sample.id;
 				return ret;
 			}
 		}
-	} else if (turn.validCount < max) {
-
-		let unValid = samples.filter(sample => (!sample.isValid || !sample.isPossible) && sample.isDiagnosed);
-		for (let sample of unValid) {
+	} else if (turn.expertiseCount < maxSamples) {
+		printErr('2');
+		let notExpertiseSamples = mySamples.filter(sample => !sample.isExpertise);
+		for (let sample of notExpertiseSamples) {
 			ret.action = 'CONNECT ' + sample.id;
 			return ret;
 		}
 		return goTo(DIAGNOSIS, SAMPLES);
-
+	} else if (unFinishedProject && turn.projectCount < PROJ_MIN) {
+		printErr('3');
+		let notProjectSamples = mySamples.filter(sample => !sample.isProject);
+		for (let sample of notProjectSamples) {
+			ret.action = 'CONNECT ' + sample.id;
+			return ret;
+		}
+		return goTo(DIAGNOSIS, SAMPLES);
+	} else if (turn.valuableCount < turn.minValuable) {
+		printErr('4');
+		let notValuableSamples = mySamples.filter(sample => !sample.isValuable);
+		for (let sample of notValuableSamples) {
+			ret.action = 'CONNECT ' + sample.id;
+			return ret;
+		}
+		return goTo(DIAGNOSIS, SAMPLES);
+	} else if (turn.possibleCount < turn.minPossible) {
+		let notPossibleSamples = mySamples.filter(sample => !sample.isPossible);
+		printErr('WWWWTTTFFFF');
+		for (let sample of notPossibleSamples) {
+			ret.action = 'CONNECT ' + sample.id;
+			return ret;
+		}
+		return goTo(DIAGNOSIS, SAMPLES);
 	} else {
 		return goTo(DIAGNOSIS, MOLECULES);
 	}
@@ -208,29 +246,29 @@ function getMolTurn(turn) {
 		return goTo(MOLECULES, SAMPLES);
 	}
 
-	samples.sort((sampleA, sampleB) => sampleA - sampleB);
+	let possibleSample = samples.filter(sample => sample.isPossible).pop();
 
-	for (let sample of samples) {
-
-		if (isSampleComplete(sample, turn)) {
-			return goTo(MOLECULES, LABORATORY);
-		} else if (sample.isValid) {
-			let avail = turn.availability;
-			let storage = turn.me.storage;
-
-			let molID = getNextMolID(sample, avail, storage);
-
-			//if we can't find mol for this sample, wait one turn
-			if (molID === null) {
-				printErr('NULL');
-				return ret;
-			}
-			ret.action = 'CONNECT ' + molID;
-		} else if (samples.length < getMaxSamplesNum(turn)) {
-			goTo(MOLECULES, SAMPLES);
-		}
-		return ret;
+	if (!possibleSample) {
+		possibleSample = samples.pop();
 	}
+
+	if (isSampleComplete(possibleSample, turn)) {
+		return goTo(MOLECULES, LABORATORY);
+	} else if (possibleSample.isPossible) {
+		let avail = turn.availability;
+		let storage = turn.me.storage;
+
+		let molID = getNextMolID(possibleSample, avail, storage);
+		//if we can't find mol for this sample, wait one turn
+		if (molID === null) {
+			printErr('NULL');
+			return ret;
+		}
+		ret.action = 'CONNECT ' + molID;
+	} else if (samples.length < getMaxSamplesNum(turn)) {
+		goTo(MOLECULES, SAMPLES);
+	}
+	return ret;
 }
 
 function getLabTurn(turn) {
@@ -257,21 +295,25 @@ function getLabTurn(turn) {
 //////////////////////// HELPER FUNCTIONS: //////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
-function setProject(){
-	let projects = PROJECTS;
+function updateProjectData(turn) {
+	let expertise = turn.me.expertise;
+	let projects = turn.projects;
 
-	for(let project of projects){
-		if(project.total === PROJECT_TYPE){
-			project.working = true;
-			return;
+	let expertiseTotal = expertise.a + expertise.b + expertise.c + expertise.d + expertise.e;
+	let mySamples = turn.mySamples;
+	if(expertiseTotal <= 0){
+		if(mySamples.filter(sample => sample.isDiagnosed).length > 0){
+			expertise = mySamples[0].cost;
+			mySamples.forEach(sample => sample.isProject = true);
+			turn.projectCount = mySamples.filter(sample => sample.isDiagnosed).length;
 		}
 	}
-}
+	projects.forEach(project => {
+		if (project.a >= expertise.a && project.b >= expertise.b && project.c >= expertise.c && project.d >= expertise.d && project.e >= expertise.e) project.isFinished = true;
+		project.dificulty = project.a - expertise.a + project.b - expertise.b + project.c - expertise.c + project.d - expertise.d + project.e - expertise.e;
+	});
 
-function getMaxSamplesNum(turn) {
-	if (turn.number >= ONE_SAMPLE_TURN) return 1;
-	if (turn.number >= TWO_SAMPLES_TURN) return 2;
-	return 3;
+	projects.sort((projectA, projectB) => projectA.dificulty - projectB.dificulty);
 }
 
 function setSamplesData(turn) {
@@ -281,73 +323,97 @@ function setSamplesData(turn) {
 
 	let samples = turn.mySamples;
 	let expertise = turn.me.expertise;
+	let projects = turn.projects;
 	// let availability = turn.availability;
 	let possibleCount = 0;
-	let validCount = 0;
+	let expertiseCount = 0;
 	let diagnosedCount = 0;
+	let projectCount = 0;
+	let valuableCount = 0;
 	samples.forEach(function (sample) {
 		if (sample.cost.total < 0) return;
 
 		diagnosedCount++;
-		let isValid = true;
+		let isExpertise = true;
 		let isPossible = true;
 		let isProject = false;
-		let cost = sample.updatedCost;
-		// let health = sample.health;
+		let isValuable = false;
+		let updatedCost = sample.updatedCost;
+		let health = sample.health;
 		let gain = sample.expertiseGain;
+		let rank = sample.rank;
 		let totalCost = sample.updatedCost.total;
 
-		if (totalCost > 10) isValid = false;
+		if (totalCost > 10) isExpertise = false;
+
+		switch (rank) {
+			case 1:
+				if (health > MIN_HEALTH_RANK_ONE) isValuable = true;
+				break;
+			case 2:
+				if (health > MIN_HEALTH_RANK_TWO) isValuable = true;
+				break;
+			case 3:
+				if (health > MIN_HEALTH_RANK_THREE) isValuable = true;
+				break;
+		}
+
+		let unFinishedProject = projects.filter(project => !project.isFinished).pop();
 
 		switch (gain) {
 			case 'A':
-				if (expertise.a === 5) isValid = false;
+				if (expertise.a === 5) isExpertise = false;
+				if (unFinishedProject && unFinishedProject.a - expertise.a > 0) isProject = true;
 				break;
 			case 'B':
-				if (expertise.b === 5) isValid = false;
+				if (expertise.b === 5) isExpertise = false;
+				if (unFinishedProject && unFinishedProject.b - expertise.b > 0) isProject = true;
 				break;
 			case 'C':
-				if (expertise.c === 5) isValid = false;
+				if (expertise.c === 5) isExpertise = false;
+				if (unFinishedProject && unFinishedProject.c - expertise.c > 0) isProject = true;
 				break;
 			case 'D':
-				if (expertise.d === 5) isValid = false;
+				if (expertise.d === 5) isExpertise = false;
+				if (unFinishedProject && unFinishedProject.d - expertise.d > 0) isProject = true;
 				break;
 			case 'E':
-				if (expertise.e === 5) isValid = false;
+				if (expertise.e === 5) isExpertise = false;
+				if (unFinishedProject && unFinishedProject.e - expertise.e > 0) isProject = true;
 				break;
 		}
 
-		if (cost.a > 5) {
-			isPossible = false;
-			isValid = false;
-		}
-		if (cost.b > 5) {
-			isPossible = false;
-			isValid = false;
-		}
-		if (cost.c > 5) {
-			isValid = false;
+		if (updatedCost.a > 5) {
 			isPossible = false;
 		}
-		if (cost.d > 5) {
+		if (updatedCost.b > 5) {
 			isPossible = false;
-			isValid = false;
 		}
-		if (cost.e > 5) {
+		if (updatedCost.c > 5) {
 			isPossible = false;
-			isValid = false;
+		}
+		if (updatedCost.d > 5) {
+			isPossible = false;
+		}
+		if (updatedCost.e > 5) {
+			isPossible = false;
 		}
 
-		let project = PROJECTS.filter(project => project.working).pop();
 
 		sample.isPossible = isPossible;
-		sample.isValid = isValid;
-		if (isValid) validCount++;
+		sample.isExpertise = isExpertise;
+		sample.isProject = isProject;
+		sample.isValuable = isValuable;
+		if (isExpertise) expertiseCount++;
 		if (isPossible) possibleCount++;
+		if (isProject) projectCount++;
+		if (isValuable) valuableCount++;
 	});
 	turn.possibleCount = possibleCount;
-	turn.validCount = validCount;
+	turn.expertiseCount = expertiseCount;
 	turn.diagnosedCount = diagnosedCount;
+	turn.projectCount = projectCount;
+	turn.valuableCount = valuableCount;
 }
 
 function getPreviousMovingCounter() {
@@ -360,22 +426,42 @@ function getPreviousState(turns) {
 	else return turns[turns.length - 1].state;
 }
 
-function getNextRank(turn) {
+function getSampleRank(turn) {
 	let level = turn.level;
 	if (level === 1) return LEVEL_ONE_RANK;
 	if (level === 2) return LEVEL_TWO_RANK;
 	if (level === 3) return LEVEL_THREE_RANK;
 }
 
-function getLevel(turn) {
-	// if (turn.me.expertise.total >= LEVEL_THREE_EXPERTISE) return 3;
-	// if (turn.me.expertise.total >= LEVEL_TWO_EXPERTISE) return 2;
-	// if (turn.me.expertise.total >= LEVEL_ONE_EXPERTISE) return 1;
+function getMinValuableSampleNum(turn){
+	let maxSamples = turn.maxSamples;
+	let minValue = Math.round((VALUE_STRATEGY/3) * maxSamples);
+	return minValue;
+}
 
+function getMinPossibleSampleNum(turn){
+	let panicLevel = turn.panicLevel;
+	let maxSamples = turn.maxSamples;
+	let minPos = Math.round((POSSIBLE_STRATEGY / 3) * panicLevel);
+	if(minPos < maxSamples) return maxSamples;
+	return minPos;
+}
+
+function getLevel(turn) {
 	let turnCounter = turn.number;
 	if (turnCounter >= LEVEL_THREE_TURN) return 3;
 	if (turnCounter >= LEVEL_TWO_TURN) return 2;
 	return 1;
+}
+
+function getMaxSamplesNum(turn) {
+	return turn.panicLevel;
+}
+
+function getPanicLevel(turn) {
+	if (turn.number >= PANIC_LEVEL_ONE_TURN) return 1;
+	if (turn.number >= PANIC_LEVEL_TWO_TURN) return 2;
+	return 3;
 }
 
 function getNextMolID(sample, avail, storage) {
@@ -538,9 +624,11 @@ function getProjectData() {
 		let d = parseInt(inputs[3]);
 		let e = parseInt(inputs[4]);
 		let total = a + b + c + d + e;
-		let working = false;
-		projects.push({ a, b, c, d, e, total, working});
+		let isFinished = false;
+		let dificulty = total + 10;
+		projects.push({ a, b, c, d, e, total, isFinished, dificulty });
 	}
+	projects.sort((projectA, projectB) => projectA.dificulty - projectB.dificulty);
 	return projects;
 }
 
